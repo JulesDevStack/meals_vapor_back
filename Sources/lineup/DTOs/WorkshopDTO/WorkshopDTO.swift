@@ -7,7 +7,7 @@
 import Fluent
 import Vapor
 
-struct workshopDTO: Content {
+struct WorkshopDTO: Content {
     var id: UUID
     var name: String
     var startTime: Date
@@ -15,5 +15,14 @@ struct workshopDTO: Content {
     var maxCapacity: Int
     var totalSubscribers: Int
     var description: String
-    var categoryID: UUID
+    var categoryName: String
+    var availableSpot: Int {
+        maxCapacity - totalSubscribers
+    }
 }
+
+struct WorkshopWithReservationDTO: Content {
+    var workshopDTO: WorkshopDTO
+    var reservations: [ReservationDTO]
+}
+

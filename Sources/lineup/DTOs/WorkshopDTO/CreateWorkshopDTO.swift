@@ -12,7 +12,6 @@ struct CreateWorkshopDTO: Content {
     var startTime: Date
     var endTime: Date
     var maxCapacity: Int
-    var totalSubscribers: Int  //TODO: supprimer car calculer ds le backend
     var description: String
     var categoryID: UUID
     
@@ -22,7 +21,7 @@ struct CreateWorkshopDTO: Content {
             startTime: self.startTime,
             endTime: self.endTime,
             maxCapacity: self.maxCapacity,
-            totalSubscribers: self.totalSubscribers,
+            totalSubscribers: 0,
             description: self.description
         )
     
