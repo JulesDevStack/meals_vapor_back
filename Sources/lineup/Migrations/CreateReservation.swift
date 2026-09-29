@@ -30,14 +30,12 @@ struct CreateReservation: AsyncMigration {
                     "id"
                 )
             )
-            .unique(on: "fk_id_workshop",
-            "fk_id_user"
-            )
             .field(
                 "status",
-                .bool,
+                .string,
                 .required
             )
+            .unique(on: "fk_id_workshop", "fk_id_user")
             .create()
     }
     func revert(on database: any Database) async throws {

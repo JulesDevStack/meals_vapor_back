@@ -7,22 +7,28 @@
 
 import Vapor
 import Fluent
-final class Reservation:Model , Content, @unchecked Sendable {
+final class Reservation: Model, Content, @unchecked Sendable {
     static let schema: String = "reservations"
     
     @ID(key: .id)
     var id : UUID?
     
-    @Parent(key: "id_workshop")
+    @Parent(key: "fk_id_workshop")
     var workshop : Workshop
     
-    @Parent(key: "id_user")
+    @Parent(key: "fk_id_user")
     var user : User
     
     @Field(key: "status")
     var status : String
+    
     init() {
         
+    }
+    
+    init(id: UUID? = nil, status: String) {
+        self.id = id
+        self.status = status
     }
     
     init(id: UUID? = nil, workshop: UUID, user: UUID, status: String) {

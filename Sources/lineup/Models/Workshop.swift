@@ -36,6 +36,16 @@ final class Workshop: Model, @unchecked Sendable {
     var category: Category
     
     init() {}
+    
+    init(id: UUID? = nil, name: String, startTime: Date, endTime: Date, maxCapacity: Int, totalSubscribers: Int, description: String) {
+        self.id = id
+        self.name = name
+        self.startTime = startTime
+        self.endTime = endTime
+        self.maxCapacity = maxCapacity
+        self.totalSubscribers = totalSubscribers
+        self.description = description
+    }
 
     init(id: UUID? = nil, name: String, startTime: Date, endTime: Date, maxCapacity: Int, totalSubscribers: Int, description: String, category: Category) {
         self.id = id
@@ -48,4 +58,19 @@ final class Workshop: Model, @unchecked Sendable {
         self.category = category
     }
     
+}
+
+extension Workshop {
+    func toDTO() throws -> workshopDTO {
+        return workshopDTO(
+            id: try requireID(),
+            name: self.name,
+            startTime: self.startTime,
+            endTime: self.endTime,
+            maxCapacity: self.maxCapacity,
+            totalSubscribers: self.totalSubscribers,
+            description: self.description,
+            categoryID: self.$category.id
+        )
+    }
 }
