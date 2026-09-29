@@ -28,7 +28,7 @@ struct CreateUser: AsyncMigration {
                 .required
             )
             .field(
-                "roll",
+                "role",
                 .string,
                 .required
             )
