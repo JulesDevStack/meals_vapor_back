@@ -59,18 +59,3 @@ final class Workshop: Model, @unchecked Sendable {
     }
     
 }
-
-extension Workshop {
-    func toDTO() throws -> workshopDTO {
-        return workshopDTO(
-            id: try requireID(),
-            name: self.name,
-            startTime: self.startTime,
-            endTime: self.endTime,
-            maxCapacity: self.maxCapacity,
-            totalSubscribers: self.totalSubscribers,
-            description: self.description,
-            categoryID: self.$category.id
-        )
-    }
-}

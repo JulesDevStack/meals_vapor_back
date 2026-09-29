@@ -16,10 +16,25 @@ struct WorkshopDTO: Content {
     var totalSubscribers: Int
     var description: String
     var categoryName: String
-    var availableSpot: Int {
-        maxCapacity - totalSubscribers
+    var availableSpot: Int
+}
+
+extension Workshop {
+    func toWorkshopDTO() throws -> WorkshopDTO {
+        return WorkshopDTO(
+            id: try requireID(),
+            name: self.name,
+            startTime: self.startTime,
+            endTime: self.endTime,
+            maxCapacity: self.maxCapacity,
+            totalSubscribers: self.totalSubscribers,
+            description: self.description,
+            categoryName: self.category.name,
+            availableSpot: self.maxCapacity - self.totalSubscribers
+        )
     }
 }
+
 
 struct WorkshopWithReservationDTO: Content {
     var workshopDTO: WorkshopDTO
