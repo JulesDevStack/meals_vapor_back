@@ -35,9 +35,10 @@ final class Workshop: Model, @unchecked Sendable {
     @Parent(key: "fk_id_category")
     var category: Category
     
+    
     init() {}
     
-    init(id: UUID? = nil, name: String, startTime: Date, endTime: Date, maxCapacity: Int, totalSubscribers: Int, description: String) {
+    init(id: UUID? = nil, name: String, startTime: Date, endTime: Date, maxCapacity: Int, totalSubscribers: Int, description: String, categoryID: UUID) {
         self.id = id
         self.name = name
         self.startTime = startTime
@@ -45,17 +46,7 @@ final class Workshop: Model, @unchecked Sendable {
         self.maxCapacity = maxCapacity
         self.totalSubscribers = totalSubscribers
         self.description = description
-    }
-
-    init(id: UUID? = nil, name: String, startTime: Date, endTime: Date, maxCapacity: Int, totalSubscribers: Int, description: String, category: Category) {
-        self.id = id
-        self.name = name
-        self.startTime = startTime
-        self.endTime = endTime
-        self.maxCapacity = maxCapacity
-        self.totalSubscribers = totalSubscribers
-        self.description = description
-        self.category = category
+        self.$category.id = categoryID
     }
     
 }

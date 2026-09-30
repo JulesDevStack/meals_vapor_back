@@ -33,6 +33,25 @@ extension Workshop {
             availableSpot: self.maxCapacity - self.totalSubscribers
         )
     }
+    
+    func toWorkshopWithReservationDTO() throws -> WorkshopWithReservationDTO {
+        return WorkshopWithReservationDTO(
+            workshopDTO: WorkshopDTO(
+                id: try requireID(),
+                name: self.name,
+                startTime: self.startTime,
+                endTime: self.endTime,
+                maxCapacity: self.maxCapacity,
+                totalSubscribers: self.totalSubscribers,
+                description: self.description,
+                categoryName: self.category.name,
+                availableSpot: self.maxCapacity - self.totalSubscribers
+            ),
+            reservations: [
+                
+            ]
+        )
+    }
 }
 
 

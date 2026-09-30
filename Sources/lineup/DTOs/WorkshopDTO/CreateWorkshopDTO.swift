@@ -22,10 +22,11 @@ struct CreateWorkshopDTO: Content {
             endTime: self.endTime,
             maxCapacity: self.maxCapacity,
             totalSubscribers: 0,
-            description: self.description
+            description: self.description,
+            categoryID: self.categoryID
         )
     
-        workshop.$category.id = self.categoryID
+//        workshop.$category.id = self.categoryID
         return workshop
     }
 }

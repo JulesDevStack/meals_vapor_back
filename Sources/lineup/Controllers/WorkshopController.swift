@@ -38,5 +38,21 @@ struct WorkshopController: RouteCollection {
         return res
     }
     
+//    func getWorkshopWithReservation(req: Request) async throws -> WorkshopWithReservationDTO {
+//        guard let id = req.parameters.get("id", as: UUID.self) else {
+//            throw Abort(.badRequest, reason: "workshop id is required")
+//        }
+//        
+//        guard let workshop = try await Workshop.find(id, on: req.db) else {
+//            throw Abort(.notFound, reason: "workshop not found")
+//        }
+//        
+//        guard let reservation = try await Reservation
+//            .query(on: req.db)
+//            .filter(<#T##filter: ModelFieldFilter<Reservation, Reservation>##ModelFieldFilter<Reservation, Reservation>#>)
+//        
+//        return try workshop.toWorkshopDTO()
+//    }
+    
     
 }
