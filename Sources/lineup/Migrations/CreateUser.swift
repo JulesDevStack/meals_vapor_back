@@ -1,8 +1,8 @@
 //
 //  CreateUser.swift
-//  vaporMediatheque
+//  lineup
 //
-//  Created by apprenant102 on 29/09/2026.
+//  Created by Filip Rizov on 29/09/2026.
 //
 
 import Fluent
