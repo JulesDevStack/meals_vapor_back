@@ -6,6 +6,7 @@
 //
 
 import Vapor
+
 import Fluent
 final class Reservation: Model, Content, @unchecked Sendable {
     static let schema: String = "reservations"

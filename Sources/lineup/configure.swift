@@ -16,11 +16,18 @@ func configure(_ app: Application) async throws {
         database: Environment.get("DATABASE_NAME") ?? "lineup",
         tlsConfiguration: nil
     ), as: .mysql)
+    
 
 //    app.migrations.add(CreateCategory())
 //    app.migrations.add(CreateWorkshop())
 //    app.migrations.add(CreateUser())
 //    app.migrations.add(CreateReservation())
+    
+    // configure URL decoder to use ISO 8601 format
+     let decoderConfiguration = URLEncodedFormDecoder(
+         configuration: .init(dateDecodingStrategy: .iso8601)
+     )
+     ContentConfiguration.global.use(urlDecoder: decoderConfiguration)
     
     app.http.server.configuration.port = 8081
     
