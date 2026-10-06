@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum ReservationStatus: String {
+enum ReservationStatus: String, CaseIterable {
     case validate = "validée"
     case waiting = "en attente"
     case cancel = "annulée"

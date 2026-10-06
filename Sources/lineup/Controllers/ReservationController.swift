@@ -10,65 +10,77 @@ import Vapor
 struct ReservationController: RouteCollection{
     func boot(routes: any RoutesBuilder) throws {
         let reservations = routes.grouped("reservations")
-        reservations.get(use: index)
         
-        reservations.group(":reservationID") { idPath in
-            
-        }
+        reservations.get(use: getAll)
+        reservations.get(":id", use: getOneById)
         
-        reservations.post("participate",":reservationID", use: participate)
-        reservations.delete("cancel",":reservationID", use: cancel)
-        reservations.delete(":reservationID", use: delete)
+        let privateRoutes = reservations.grouped(JWTMiddleware())
+        privateRoutes.post("participate",":id", use: participate)
+
+        privateRoutes.delete("cancel",":id", use: cancel)
         
     }
     
     
     //get all reservations
-    func index(req :Request) async throws -> [Reservation]{
-        return try await Reservation.query(on: req.db)
+    func getAll(req :Request) async throws -> [ReservationDTO] {
+        return try await Reservation
+            .query(on: req.db)
             .all()
+            .map({ $0.toReservationDTO() })
+    }
+    
+    //get one reservation
+    func getOneById(req :Request) async throws -> ReservationDTO {
+        guard let id = req.parameters.get("id", as: UUID.self) else {
+            throw Abort(.badRequest)
+        }
+
+        guard let reservation = try await Reservation.find(id, on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        return reservation.toReservationDTO()
     }
     
     
     //create reservation
-    func participate(req: Request) async throws -> Reservation {
+    func participate(req: Request) async throws -> Response {
         
-        guard let id = req.parameters.get("reservationID", as: UUID.self) else {
-            throw Abort(.badRequest)
+        /// VALIDATOR LIKE WORKSHOP POST WIHT .CASE OF
+        
+        
+        var reservation = try req.content.decode(CreateReservationDTO.self)
+            
+        let payload = try req.auth.require(UserPayload.self)
+        
+        guard let userDB = try await User.find(payload.id, on: req.db) else {
+            throw Abort(.notFound, reason: "User not found")
         }
         
-        guard let reservation = try await Reservation.find(id, on: req.db) else { throw Abort(.notFound)}
+        reservation.userID = userDB.id
+            
+        let reservationModel = try reservation.toModel()
         
-        reservation.status = "valide"
+        try await reservationModel.save(on: req.db)
         
-        try await reservation.update(on: req.db)
-        
-        return reservation
+        return Response(status: .created)
     }
-    
     
     //cancel reservation
     func cancel(req: Request) async throws -> HTTPStatus {
-        guard let id = req.parameters.get(
-        "reservationID",as: UUID.self)
-        else {throw Abort(.badRequest)}
-        guard let reservation = try await Reservation.find(
-            id,on: req.db)
-        else {throw Abort(.notFound)}
-        reservation.status = "annule"
+        guard let id = req.parameters.get("id", as: UUID.self) else {
+            throw Abort(.badRequest)
+        }
+
+        guard let reservation = try await Reservation.find(id, on: req.db) else {
+            throw Abort(.notFound)
+        }
+
+        reservation.status = ReservationStatus.cancel.rawValue
+
         try await reservation.update(on: req.db)
-        return .noContent
-    }
-    
-    
-    
-    //delete reservation
-    func delete(req : Request) async throws -> HTTPStatus{
-        guard let id = req.parameters.get("reservationID", as: UUID.self)
-                else{throw Abort(.badRequest)}
-        guard let reservation = try await Reservation.find(id, on: req.db)
-                else{throw Abort(.notFound)}
-        try await reservation.delete(on: req.db)
+
         return .noContent
     }
     

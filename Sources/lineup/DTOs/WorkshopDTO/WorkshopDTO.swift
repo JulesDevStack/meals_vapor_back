@@ -47,9 +47,7 @@ extension Workshop {
                 categoryName: self.category.name,
                 availableSpot: self.maxCapacity - self.totalSubscribers
             ),
-            reservations: [
-                
-            ]
+            reservations: self.reservations.map({ $0.toReservationDTO()})
         )
     }
 }
@@ -59,4 +57,3 @@ struct WorkshopWithReservationDTO: Content {
     var workshopDTO: WorkshopDTO
     var reservations: [ReservationDTO]
 }
-

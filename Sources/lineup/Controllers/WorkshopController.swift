@@ -14,6 +14,9 @@ struct WorkshopController: RouteCollection {
         
         path.get("", use: index)
         path.post("", use: createWorkshop)
+
+        path.get(":id", use: getWorkshopWithReservation)
+        
     }
     
     @Sendable
@@ -24,35 +27,62 @@ struct WorkshopController: RouteCollection {
         return try workshops.map({ try $0.toWorkshopDTO() })
     }
     
+    @Sendable
+    func getWorkshop(req: Request) async throws -> WorkshopDTO {
+        
+        guard let id = req.parameters.get("id", as: UUID.self) else {
+            throw Abort(.badRequest)
+        }
+                
+        guard let workshops = try await Workshop.query(on: req.db)
+            .filter(\.$id == id)
+            .with(\.$category)
+            .first()
+        else {
+            throw Abort(.notFound)
+        }
+        
+        return try workshops.toWorkshopDTO()
+    }
+    
+    @Sendable
+    func getWorkshopWithReservation(req: Request) async throws -> WorkshopWithReservationDTO {
+        
+        guard let id = req.parameters.get("id", as: UUID.self) else {
+            throw Abort(.badRequest)
+        }
+        
+        guard let workshops = try await Workshop.query(on: req.db)
+            .filter(\.$id == id)
+            .with(\.$reservations, { re in
+                re.with(\.$user)
+            })
+            .with(\.$category)
+            .first() else {
+            throw Abort(.notFound)
+        }
+        
+        return try workshops.toWorkshopWithReservationDTO()
+    }
+    
     func createWorkshop(req: Request) async throws -> Response {
-        //VALIDER LES DONNEE ???
-//        try CreateEventRequest.validate(content: req)
-//        struct CreateEventRequest: Content, Validatable {
-//        static func validations(_ validations: inout Validations) {
-//        validations.add("title", as: String.self, is: !.empty)
+        try CreateWorkshopDTO.validate(content: req)
         
+        var workshop = try req.content.decode(CreateWorkshopDTO.self)
         
-        let workshop = try req.content.decode(CreateWorkshopDTO.self).toModel()
-        try await workshop.save(on: req.db)
+        guard workshop.startTime < workshop.endTime else {
+            throw Abort(.badRequest, reason: "endTime must be greater than startTime")
+        }
+        
+        guard try await Category.find(workshop.categoryID, on: req.db) != nil else {
+            throw Abort(.notFound, reason: "Category not found.")
+        }
+        
+        let workshopModel = workshop.toModel()
+        
+        try await workshopModel.save(on: req.db)
         let res = Response(status: .created)
         return res
     }
-    
-//    func getWorkshopWithReservation(req: Request) async throws -> WorkshopWithReservationDTO {
-//        guard let id = req.parameters.get("id", as: UUID.self) else {
-//            throw Abort(.badRequest, reason: "workshop id is required")
-//        }
-//        
-//        guard let workshop = try await Workshop.find(id, on: req.db) else {
-//            throw Abort(.notFound, reason: "workshop not found")
-//        }
-//        
-//        guard let reservation = try await Reservation
-//            .query(on: req.db)
-//            .filter(<#T##filter: ModelFieldFilter<Reservation, Reservation>##ModelFieldFilter<Reservation, Reservation>#>)
-//        
-//        return try workshop.toWorkshopDTO()
-//    }
-    
-    
 }
+

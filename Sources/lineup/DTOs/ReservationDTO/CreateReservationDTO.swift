@@ -9,15 +9,17 @@ import Vapor
 
 struct CreateReservationDTO: Content {
     var workshopID: UUID
-    var userID: UUID
+    var userID: UUID?
     
-    func toModel() -> Reservation {
+    func toModel() throws -> Reservation {
+        guard let userID = userID else { throw Abort(.badRequest, reason: "Need user authentification")}
+        
         let reservation = Reservation(
             status: ReservationStatus.validate.rawValue,
         )
     
         reservation.$workshop.id = self.workshopID
-        reservation.$user.id = self.userID
+        reservation.$user.id = self.userID!
         
         return reservation
     }
