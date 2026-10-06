@@ -15,7 +15,10 @@ struct WorkshopController: RouteCollection {
         path.get("", use: index)
         path.post("", use: createWorkshop)
 
-        path.get(":id", use: getWorkshopWithReservation)
+        path.group(":id") { pathId in
+            pathId.get(use: getWorkshopWithReservation)
+            pathId.put(use: editWorkshop)
+        }
         
     }
     
@@ -68,7 +71,7 @@ struct WorkshopController: RouteCollection {
     func createWorkshop(req: Request) async throws -> Response {
         try CreateWorkshopDTO.validate(content: req)
         
-        var workshop = try req.content.decode(CreateWorkshopDTO.self)
+        let workshop = try req.content.decode(CreateWorkshopDTO.self)
         
         guard workshop.startTime < workshop.endTime else {
             throw Abort(.badRequest, reason: "endTime must be greater than startTime")
@@ -83,6 +86,27 @@ struct WorkshopController: RouteCollection {
         try await workshopModel.save(on: req.db)
         let res = Response(status: .created)
         return res
+    }
+    
+    func editWorkshop(req: Request) async throws -> WorkshopDTO {
+        let id = try req.parameters.require("id", as: UUID.self)
+        
+        try UpdateWorkshopDTO.validate(content: req)
+        
+        var updatedWorkshop = try req.content.decode(UpdateWorkshopDTO.self)
+        try await updatedWorkshop.customValidation(db: req.db)
+        
+        guard let workshopModel = try await Workshop.find(id, on: req.db) else {
+            throw Abort(.notFound, reason: "Workshop not found.")
+        }
+        
+        updatedWorkshop.totalSubscribers = updatedWorkshop.maxCapacity - workshopModel.reservations.count
+        
+        workshopModel.apply(updatedWorkshop: updatedWorkshop)
+        
+        try await workshopModel.update(on: req.db)
+        
+        return try workshopModel.toWorkshopDTO()
     }
 }
 

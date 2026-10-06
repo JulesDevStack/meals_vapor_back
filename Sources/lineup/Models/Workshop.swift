@@ -52,3 +52,15 @@ final class Workshop: Model, @unchecked Sendable {
     }
     
 }
+
+extension Workshop {
+    func apply(updatedWorkshop: UpdateWorkshopDTO) {
+        self.name = updatedWorkshop.name
+        self.startTime = updatedWorkshop.startTime
+        self.endTime = updatedWorkshop.endTime
+        self.maxCapacity = updatedWorkshop.maxCapacity
+        self.totalSubscribers = updatedWorkshop.totalSubscribers
+        self.description = updatedWorkshop.description
+        self.category.id = updatedWorkshop.categoryID
+    }
+}
