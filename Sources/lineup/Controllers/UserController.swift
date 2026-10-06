@@ -38,11 +38,11 @@ struct UserController: RouteCollection {
             .query(on: req.db)
             .filter(\.$email == userRequest.email)
             .first() else {
-            throw Abort(.notFound, reason: "user non trouvé")
+            throw Abort(.notFound, reason: "Authentification failed")
         }
         
         guard try Bcrypt.verify(userRequest.password, created: userDB.password) else {
-            throw Abort(.notFound, reason: "mot de passe incorrect")
+            throw Abort(.notFound, reason: "Authentification failed")
         }
         
         let payload = UserPayload(id: userDB.id!)
