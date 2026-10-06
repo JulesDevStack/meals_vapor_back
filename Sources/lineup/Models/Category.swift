@@ -26,11 +26,4 @@ final class Category: Model, @unchecked Sendable {
         self.id = id
         self.name = name
     }
-    
-//    func toDTO() -> Category {
-//        .init(
-//            id: self.id,
-//            name: self.name
-//        )
-//    }
 }

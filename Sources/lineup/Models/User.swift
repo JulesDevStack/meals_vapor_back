@@ -33,6 +33,7 @@ final class User: Model, Content, @unchecked Sendable {
     var reservations: [Reservation]
     
     init() {}
+    
     init(id: UUID? = nil, name: String, password: String, email: String, role: String, createdAt: Date) {
         self.id = id
         self.name = name
@@ -42,3 +43,16 @@ final class User: Model, Content, @unchecked Sendable {
         self.createdAt = createdAt
     }
 }
+
+extension User {
+    func toDTO() -> UserDTO {
+        return UserDTO(
+            id: id,
+            name: name,
+            email: email,
+            role: role,
+            createdAt: createdAt
+        )
+    }
+}
+
