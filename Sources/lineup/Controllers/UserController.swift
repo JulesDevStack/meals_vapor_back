@@ -13,9 +13,9 @@ struct UserController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         
         routes.post("login", use: login)
-        
+        routes.post("register", use: create)
+
         let users = routes.grouped("users")
-        users.post(use: create)
         
         let privateRoutes = users.grouped(JWTMiddleware())
         privateRoutes.get("profile", use: profile)
@@ -23,6 +23,7 @@ struct UserController: RouteCollection {
     }
     
     func create(req: Request) async throws -> UserDTO {
+        try CreateUserDTO.validate(content: req)
         var newUser = try req.content.decode(CreateUserDTO.self)
         newUser.password = try Bcrypt.hash(newUser.password)
         let userToSave = newUser.toModel()
