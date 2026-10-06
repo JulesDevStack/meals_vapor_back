@@ -57,7 +57,7 @@ struct UserController: RouteCollection {
         let payload = try req.auth.require(UserPayload.self)
         
         guard let userDB = try await User.find(payload.id, on: req.db) else {
-            throw Abort(.notFound, reason: "utilisateur null")
+            throw Abort(.notFound, reason: "User not found")
         }
         
         return userDB.toDTO()
