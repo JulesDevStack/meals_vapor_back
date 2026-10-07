@@ -11,9 +11,9 @@ import Vapor
 struct WorkshopController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let path = routes.grouped("workshops")
-        
         path.get("", use: index)
         path.post("", use: createWorkshop)
+        path.put(":id", use: update)
     }
     
     @Sendable
@@ -26,10 +26,10 @@ struct WorkshopController: RouteCollection {
     
     func createWorkshop(req: Request) async throws -> Response {
         //VALIDER LES DONNEE ???
-//        try CreateEventRequest.validate(content: req)
-//        struct CreateEventRequest: Content, Validatable {
-//        static func validations(_ validations: inout Validations) {
-//        validations.add("title", as: String.self, is: !.empty)
+        //        try CreateEventRequest.validate(content: req)
+        //        struct CreateEventRequest: Content, Validatable {
+        //        static func validations(_ validations: inout Validations) {
+        //        validations.add("title", as: String.self, is: !.empty)
         
         
         let workshop = try req.content.decode(CreateWorkshopDTO.self).toModel()
@@ -38,21 +38,49 @@ struct WorkshopController: RouteCollection {
         return res
     }
     
-//    func getWorkshopWithReservation(req: Request) async throws -> WorkshopWithReservationDTO {
-//        guard let id = req.parameters.get("id", as: UUID.self) else {
-//            throw Abort(.badRequest, reason: "workshop id is required")
-//        }
-//        
-//        guard let workshop = try await Workshop.find(id, on: req.db) else {
-//            throw Abort(.notFound, reason: "workshop not found")
-//        }
-//        
-//        guard let reservation = try await Reservation
-//            .query(on: req.db)
-//            .filter(<#T##filter: ModelFieldFilter<Reservation, Reservation>##ModelFieldFilter<Reservation, Reservation>#>)
-//        
-//        return try workshop.toWorkshopDTO()
-//    }
+   
+    
+    func update(req : Request) async throws -> WorkshopDTO{
+        guard let id = req.parameters.get("id", as: UUID.self)
+                else {throw Abort(.badRequest)}
+        
+        guard let workshop = try await Workshop.find(id, on: req.db)
+                else {throw Abort(.notFound)}
+        
+        let updateWorkshop = try req.content.decode(UpdateWorkshopDTO.self)
+        workshop.name = updateWorkshop.name
+        workshop.startTime = updateWorkshop.startTime
+        workshop.endTime = updateWorkshop.endTime
+        workshop.maxCapacity = updateWorkshop.maxCapacity
+        workshop.description = updateWorkshop.description
+        try await workshop.update(on: req.db)
+        return try workshop.toWorkshopDTO()
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    //    func getWorkshopWithReservation(req: Request) async throws -> WorkshopWithReservationDTO {
+    //        guard let id = req.parameters.get("id", as: UUID.self) else {
+    //            throw Abort(.badRequest, reason: "workshop id is required")
+    //        }
+    //        
+    //        guard let workshop = try await Workshop.find(id, on: req.db) else {
+    //            throw Abort(.notFound, reason: "workshop not found")
+    //        }
+    //        
+    //        guard let reservation = try await Reservation
+    //            .query(on: req.db)
+    //            .filter(<#T##filter: ModelFieldFilter<Reservation, Reservation>##ModelFieldFilter<Reservation, Reservation>#>)
+    //        
+    //        return try workshop.toWorkshopDTO()
+    //    }
     
     
 }
