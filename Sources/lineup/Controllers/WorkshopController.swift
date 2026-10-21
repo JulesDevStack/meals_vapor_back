@@ -11,7 +11,6 @@ import Vapor
 struct WorkshopController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let path = routes.grouped("workshops")
-        
         path.get("", use: index)
         path.post("", use: createWorkshop)
 
