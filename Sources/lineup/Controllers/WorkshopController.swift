@@ -23,6 +23,7 @@ struct WorkshopController: RouteCollection {
         
     }
     
+    @Sendable
     func catIndex(req :Request) async throws -> [CategoryDTO] {
         return try await Category
             .query(on: req.db)
@@ -76,6 +77,7 @@ struct WorkshopController: RouteCollection {
         return try workshops.toWorkshopWithReservationDTO()
     }
     
+    @Sendable
     func createWorkshop(req: Request) async throws -> Response {
         try CreateWorkshopDTO.validate(content: req)
         
@@ -96,6 +98,7 @@ struct WorkshopController: RouteCollection {
         return res
     }
     
+    @Sendable
     func editWorkshop(req: Request) async throws -> WorkshopDTO {
         let id = try req.parameters.require("id", as: UUID.self)
         
