@@ -38,5 +38,3 @@ struct CreateWorkshopDTO: Content, Validatable {
         return workshop
     }
 }
-
-typealias UpdateWorkshopDTO = CreateWorkshopDTO

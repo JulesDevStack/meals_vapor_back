@@ -13,7 +13,21 @@ struct WorkshopController: RouteCollection {
         let path = routes.grouped("workshops")
         path.get("", use: index)
         path.post("", use: createWorkshop)
-        path.put(":id", use: update)
+
+        path.group(":id") { pathId in
+            pathId.get(use: getWorkshopWithReservation)
+            pathId.put(use: editWorkshop)
+        }
+        
+        path.get("cate", use: catIndex)
+        
+    }
+    
+    func catIndex(req :Request) async throws -> [CategoryDTO] {
+        return try await Category
+            .query(on: req.db)
+            .all()
+            .map({ try $0.toDTO() })
     }
     
     @Sendable
@@ -24,63 +38,89 @@ struct WorkshopController: RouteCollection {
         return try workshops.map({ try $0.toWorkshopDTO() })
     }
     
+    @Sendable
+    func getWorkshop(req: Request) async throws -> WorkshopDTO {
+        
+        guard let id = req.parameters.get("id", as: UUID.self) else {
+            throw Abort(.badRequest)
+        }
+                
+        guard let workshops = try await Workshop.query(on: req.db)
+            .filter(\.$id == id)
+            .with(\.$category)
+            .first()
+        else {
+            throw Abort(.notFound)
+        }
+        
+        return try workshops.toWorkshopDTO()
+    }
+    
+    @Sendable
+    func getWorkshopWithReservation(req: Request) async throws -> WorkshopWithReservationDTO {
+        
+        guard let id = req.parameters.get("id", as: UUID.self) else {
+            throw Abort(.badRequest)
+        }
+        
+        guard let workshops = try await Workshop.query(on: req.db)
+            .filter(\.$id == id)
+            .with(\.$reservations, { re in
+                re.with(\.$user)
+            })
+            .with(\.$category)
+            .first() else {
+            throw Abort(.notFound)
+        }
+        
+        return try workshops.toWorkshopWithReservationDTO()
+    }
+    
     func createWorkshop(req: Request) async throws -> Response {
-        //VALIDER LES DONNEE ???
-        //        try CreateEventRequest.validate(content: req)
-        //        struct CreateEventRequest: Content, Validatable {
-        //        static func validations(_ validations: inout Validations) {
-        //        validations.add("title", as: String.self, is: !.empty)
+        try CreateWorkshopDTO.validate(content: req)
         
+        let workshop = try req.content.decode(CreateWorkshopDTO.self)
         
-        let workshop = try req.content.decode(CreateWorkshopDTO.self).toModel()
-        try await workshop.save(on: req.db)
+        guard workshop.startTime < workshop.endTime else {
+            throw Abort(.badRequest, reason: "endTime must be greater than startTime")
+        }
+        
+        guard try await Category.find(workshop.categoryID, on: req.db) != nil else {
+            throw Abort(.notFound, reason: "Category not found.")
+        }
+        
+        let workshopModel = workshop.toModel()
+        
+        try await workshopModel.save(on: req.db)
         let res = Response(status: .created)
         return res
     }
     
-   
-    
-    func update(req : Request) async throws -> WorkshopDTO{
-        guard let id = req.parameters.get("id", as: UUID.self)
-                else {throw Abort(.badRequest)}
+    func editWorkshop(req: Request) async throws -> WorkshopDTO {
+        let id = try req.parameters.require("id", as: UUID.self)
         
-        guard let workshop = try await Workshop.find(id, on: req.db)
-                else {throw Abort(.notFound)}
+        try UpdateWorkshopDTO.validate(content: req)
         
-        let updateWorkshop = try req.content.decode(UpdateWorkshopDTO.self)
-        workshop.name = updateWorkshop.name
-        workshop.startTime = updateWorkshop.startTime
-        workshop.endTime = updateWorkshop.endTime
-        workshop.maxCapacity = updateWorkshop.maxCapacity
-        workshop.description = updateWorkshop.description
-        try await workshop.update(on: req.db)
-        return try workshop.toWorkshopDTO()
+        var updatedWorkshop = try req.content.decode(UpdateWorkshopDTO.self)
+        try await updatedWorkshop.customValidation(db: req.db)
+        
+        guard let workshopModel = try await Workshop
+            .query(on: req.db)
+            .filter(\.$id == id)
+            .with(\.$category)
+            .with(\.$reservations)
+            .first()
+        else {
+            throw Abort(.notFound, reason: "Workshop not found.")
+        }
+        
+        updatedWorkshop.totalSubscribers = updatedWorkshop.maxCapacity - workshopModel.reservations.count
+        
+        workshopModel.apply(updatedWorkshop: updatedWorkshop)
+        
+        try await workshopModel.update(on: req.db)
+        
+        return try workshopModel.toWorkshopDTO()
     }
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    //    func getWorkshopWithReservation(req: Request) async throws -> WorkshopWithReservationDTO {
-    //        guard let id = req.parameters.get("id", as: UUID.self) else {
-    //            throw Abort(.badRequest, reason: "workshop id is required")
-    //        }
-    //        
-    //        guard let workshop = try await Workshop.find(id, on: req.db) else {
-    //            throw Abort(.notFound, reason: "workshop not found")
-    //        }
-    //        
-    //        guard let reservation = try await Reservation
-    //            .query(on: req.db)
-    //            .filter(<#T##filter: ModelFieldFilter<Reservation, Reservation>##ModelFieldFilter<Reservation, Reservation>#>)
-    //        
-    //        return try workshop.toWorkshopDTO()
-    //    }
-    
-    
 }
+

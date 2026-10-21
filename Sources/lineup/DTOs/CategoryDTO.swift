@@ -11,3 +11,10 @@ struct CategoryDTO: Content {
     var id: UUID
     var name: String
 }
+
+
+extension Category {
+    func toDTO() throws -> CategoryDTO {
+        return CategoryDTO(id: try requireID(), name: self.name)
+    }
+}
