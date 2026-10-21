@@ -20,6 +20,15 @@ struct WorkshopController: RouteCollection {
             pathId.put(use: editWorkshop)
         }
         
+        path.get("cate", use: catIndex)
+        
+    }
+    
+    func catIndex(req :Request) async throws -> [CategoryDTO] {
+        return try await Category
+            .query(on: req.db)
+            .all()
+            .map({ try $0.toDTO() })
     }
     
     @Sendable
@@ -96,7 +105,13 @@ struct WorkshopController: RouteCollection {
         var updatedWorkshop = try req.content.decode(UpdateWorkshopDTO.self)
         try await updatedWorkshop.customValidation(db: req.db)
         
-        guard let workshopModel = try await Workshop.find(id, on: req.db) else {
+        guard let workshopModel = try await Workshop
+            .query(on: req.db)
+            .filter(\.$id == id)
+            .with(\.$category)
+            .with(\.$reservations)
+            .first()
+        else {
             throw Abort(.notFound, reason: "Workshop not found.")
         }
         

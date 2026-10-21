@@ -15,17 +15,17 @@ struct ReservationController: RouteCollection{
         reservations.get(":id", use: getOneById)
         
         let privateRoutes = reservations.grouped(JWTMiddleware())
-        privateRoutes.post("participate",":id", use: participate)
+        privateRoutes.post("participate", use: participate)
 
         privateRoutes.delete("cancel",":id", use: cancel)
-        
     }
-    
     
     //get all reservations
     func getAll(req :Request) async throws -> [ReservationDTO] {
         return try await Reservation
             .query(on: req.db)
+            .with(\.$user)
+            .with(\.$workshop)
             .all()
             .map({ $0.toReservationDTO() })
     }
@@ -36,7 +36,13 @@ struct ReservationController: RouteCollection{
             throw Abort(.badRequest)
         }
 
-        guard let reservation = try await Reservation.find(id, on: req.db) else {
+        guard let reservation = try await Reservation
+            .query(on: req.db)
+            .filter(\.$id == id)
+            .with(\.$user)
+            .with(\.$workshop)
+            .first()
+        else {
             throw Abort(.notFound)
         }
         
@@ -46,10 +52,6 @@ struct ReservationController: RouteCollection{
     
     //create reservation
     func participate(req: Request) async throws -> Response {
-        
-        /// VALIDATOR LIKE WORKSHOP POST WIHT .CASE OF
-        
-        
         var reservation = try req.content.decode(CreateReservationDTO.self)
             
         let payload = try req.auth.require(UserPayload.self)
@@ -59,12 +61,21 @@ struct ReservationController: RouteCollection{
         }
         
         reservation.userID = userDB.id
-            
-        let reservationModel = try reservation.toModel()
         
-        try await reservationModel.save(on: req.db)
+        let existingReservation = try await Reservation.query(on: req.db)
+            .filter(\.$user.$id == reservation.userID!)
+            .filter(\.$workshop.$id == reservation.workshopID)
+            .first()
         
-        return Response(status: .created)
+        if existingReservation != nil {
+            return Response(status: .custom(code: 409, reasonPhrase: "Reservation already exist."))
+        } else {
+            let reservationModel = try reservation.toModel()
+            try await reservationModel.save(on: req.db)
+            return Response(status: .created)
+        }
+        
+        
     }
     
     //cancel reservation

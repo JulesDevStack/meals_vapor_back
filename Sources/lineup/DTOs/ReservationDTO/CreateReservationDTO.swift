@@ -12,7 +12,7 @@ struct CreateReservationDTO: Content {
     var userID: UUID?
     
     func toModel() throws -> Reservation {
-        guard let userID = userID else { throw Abort(.badRequest, reason: "Need user authentification")}
+        guard userID != nil else { throw Abort(.badRequest, reason: "Need user authentification")}
         
         let reservation = Reservation(
             status: ReservationStatus.validate.rawValue,
