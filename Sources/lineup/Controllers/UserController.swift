@@ -47,7 +47,7 @@ struct UserController: RouteCollection {
         }
         
         let payload = UserPayload(id: userDB.id!)
-        let signer = JWTSigner.hs256(key: Environment.get("JWT_KEY")!)
+        let signer = JWTSigner.hs256(key: "MACLESUPERSECRETE")
         let jwToken = try signer.sign(payload)
         
         return AuthDTO(token: jwToken)

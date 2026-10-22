@@ -21,6 +21,8 @@ struct WorkshopController: RouteCollection {
         
         path.get("cate", use: catIndex)
         
+        path.grouped(JWTMiddleware())
+            .get("reservations", use: getReservedWorkshopFromUser)
     }
     
     @Sendable
@@ -75,6 +77,32 @@ struct WorkshopController: RouteCollection {
         }
         
         return try workshops.toWorkshopWithReservationDTO()
+    }
+    
+    @Sendable
+    //get all reservations from one user id
+    func getReservedWorkshopFromUser(req: Request) async throws -> [WorkshopDTO] {
+        let payload = try req.auth.require(UserPayload.self)
+        
+        guard let userDB = try await User
+            .query(on: req.db)
+            .filter(\.$id == payload.id)
+            .with(\.$reservations, { re in
+                re.with(\.$workshop, { wo in
+                    wo.with(\.$category)
+                })
+            })
+                .first()
+                else {
+            throw Abort(.notFound, reason: "User not found")
+        }
+        
+        let workshops = try userDB
+            .reservations
+            .sorted(by: {$0.workshop.startTime < $1.workshop.startTime})
+            .map { try $0.workshop.toWorkshopDTO() };
+        
+        return workshops
     }
     
     @Sendable

@@ -20,6 +20,7 @@ struct ReservationController: RouteCollection{
         privateRoutes.delete("cancel",":id", use: cancel)
     }
     
+    
     //get all reservations
     func getAll(req :Request) async throws -> [ReservationDTO] {
         return try await Reservation
