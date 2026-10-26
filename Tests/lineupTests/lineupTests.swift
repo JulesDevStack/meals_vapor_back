@@ -19,4 +19,15 @@ struct lineupTests {
         }
         try await app.asyncShutdown()
     }
+    
+    
+    @Test("Test Hello World Route")
+    func helloWorld() async throws {
+        try await withApp { app in
+            try await app.testing().test(.GET, "hello", afterResponse: { res async in
+                #expect(res.status == .ok)
+                #expect(res.body.string == "Hello, world!")
+            })
+        }
+    }
 }

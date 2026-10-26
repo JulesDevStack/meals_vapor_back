@@ -18,7 +18,9 @@ let package = Package(
         // JWT Token Auth
         .package(url: "https://github.com/vapor/jwt", from: "4.0.0"),
         //Gatekeeper (Rate Limiting)
-        .package(url: "https://github.com/nodes-vapor/gatekeeper.git", from: "4.0.0")
+        .package(url: "https://github.com/nodes-vapor/gatekeeper.git", from: "4.0.0"),
+        // SQLITE
+        .package(url: "https://github.com/vapor/fluent-sqlite-driver.git", from: "4.5.0")
     ],
     targets: [
         .executableTarget(
@@ -30,7 +32,8 @@ let package = Package(
                 .product(name: "NIOCore", package: "swift-nio"),
                 .product(name: "NIOPosix", package: "swift-nio"),
                 .product(name: "JWT", package: "jwt"),
-                .product(name: "Gatekeeper", package: "gatekeeper")
+                .product(name: "Gatekeeper", package: "gatekeeper"),
+                .product(name: "FluentSQLiteDriver", package: "fluent-sqlite-driver"),
             ],
             swiftSettings: swiftSettings
         ),

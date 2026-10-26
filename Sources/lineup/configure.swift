@@ -3,26 +3,30 @@ import Fluent
 import FluentMySQLDriver
 import Vapor
 import Gatekeeper
+import FluentSQLiteDriver
 
 /// configures your application
 func configure(_ app: Application) async throws {
     // uncomment to serve files from /Public folder
     // app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
 
-    app.databases.use(DatabaseConfigurationFactory.mysql(
-        hostname: Environment.get("DATABASE_HOST") ?? "localhost",
-        port: Environment.get("DATABASE_PORT").flatMap(Int.init(_:)) ?? MySQLConfiguration.ianaPortNumber,
-        username: Environment.get("DATABASE_USERNAME") ?? "root",
-        password: Environment.get("DATABASE_PASSWORD") ?? "",
-        database: Environment.get("DATABASE_NAME") ?? "lineup",
-        tlsConfiguration: nil
-    ), as: .mysql)
+    if app.environment == .testing {
+        app.databases.use(.sqlite(.memory), as: .sqlite)
+    } else {
+        app.databases.use(DatabaseConfigurationFactory.mysql(
+            hostname: Environment.get("DATABASE_HOST") ?? "localhost",
+            port: Environment.get("DATABASE_PORT").flatMap(Int.init(_:)) ?? MySQLConfiguration.ianaPortNumber,
+            username: Environment.get("DATABASE_USERNAME") ?? "root",
+            password: Environment.get("DATABASE_PASSWORD") ?? "",
+            database: Environment.get("DATABASE_NAME") ?? "lineup",
+            tlsConfiguration: nil
+        ), as: .mysql)
+    }
     
     app.caches.use(.memory)
     app.gatekeeper.config = .init(maxRequests: 100, per: .minute)
     app.middleware.use(GatekeeperMiddleware())
     
-
 //    app.migrations.add(CreateCategory())
 //    app.migrations.add(CreateWorkshop())
 //    app.migrations.add(CreateUser())
