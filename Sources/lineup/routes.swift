@@ -5,12 +5,8 @@ func routes(_ app: Application) throws {
     app.get { req async in
         "It works!"
     }
-
-    app.get("hello") { req async -> String in
-        return "Hello, world!"
-    }
     
-    app.get("test2") { req async -> Bool in
+    app.get("testExample") { req async -> Bool in
         true
     }
     

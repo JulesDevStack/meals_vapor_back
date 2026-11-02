@@ -20,23 +20,11 @@ struct lineupTests {
         try await app.asyncShutdown()
     }
     
-    
-    @Test("Test Hello World Route")
-    func helloWorld() async throws {
+    // test example to delete at end
+    @Test("TestExample")
+    func testExemple() async throws {
         try await withApp { app in
-            try await app.testing().test(.GET, "hello", afterResponse: { res async in
-                #expect(res.status == .ok)
-                #expect(res.body.string == "Hello, world!")
-            })
-        }
-    }
-    
-    
-    
-    @Test("Test2")
-    func test2() async throws {
-        try await withApp { app in
-            try await app.testing().test(.GET, "test2", afterResponse: { res async in
+            try await app.testing().test(.GET, "testExample", afterResponse: { res async in
                 #expect(true)
             })
         }
