@@ -29,4 +29,13 @@ struct lineupTests {
             })
         }
     }
+    
+    @Test("Default")
+    func testDefault() async throws {
+        try await withApp { app in
+            try await app.testing().test(.GET, "", afterResponse: { res async in
+                #expect(res.body.string == "It works!")
+            })
+        }
+    }
 }

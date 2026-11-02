@@ -24,8 +24,11 @@ func configure(_ app: Application) async throws {
     }
     
     app.caches.use(.memory)
-    app.gatekeeper.config = .init(maxRequests: 100, per: .minute)
-    app.middleware.use(GatekeeperMiddleware())
+    
+    if app.environment != .testing {
+        app.gatekeeper.config = .init(maxRequests: 100, per: .minute)
+        app.middleware.use(GatekeeperMiddleware())
+    }
     
     app.migrations.add(CreateCategory())
     app.migrations.add(CreateWorkshop())
