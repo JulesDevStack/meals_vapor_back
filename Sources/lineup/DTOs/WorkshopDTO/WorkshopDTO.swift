@@ -16,6 +16,7 @@ struct WorkshopDTO: Content {
     var totalSubscribers: Int
     var description: String
     var categoryName: String
+    var categoryID: UUID
     var availableSpot: Int
 }
 
@@ -30,6 +31,7 @@ extension Workshop {
             totalSubscribers: self.totalSubscribers,
             description: self.description,
             categoryName: self.category.name,
+            categoryID: try requireID(),
             availableSpot: self.maxCapacity - self.totalSubscribers
         )
     }
