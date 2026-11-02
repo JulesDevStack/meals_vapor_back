@@ -31,7 +31,7 @@ extension Workshop {
             totalSubscribers: self.totalSubscribers,
             description: self.description,
             categoryName: self.category.name,
-            categoryID: try requireID(),
+            categoryID: try self.category.requireID(),
             availableSpot: self.maxCapacity - self.totalSubscribers
         )
     }
@@ -47,6 +47,7 @@ extension Workshop {
                 totalSubscribers: self.totalSubscribers,
                 description: self.description,
                 categoryName: self.category.name,
+                categoryID: try self.category.requireID(),
                 availableSpot: self.maxCapacity - self.totalSubscribers
             ),
             reservations: self.reservations.map({ $0.toReservationDTO()})
