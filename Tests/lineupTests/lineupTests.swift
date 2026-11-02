@@ -1,7 +1,16 @@
+//
+//  lineupTests.swift
+//  lineup
+//
+//  Created by Filip Rizov on 02/11/2026.
+//
+
 @testable import lineup
 import VaporTesting
 import Testing
 import Fluent
+import JWT
+import JWTKit
 
 @Suite("App Tests with DB", .serialized)
 struct lineupTests {
@@ -38,4 +47,50 @@ struct lineupTests {
             })
         }
     }
+    
+    // MOCK DATA for tests
+    struct TestingHelper {
+        // note: static allows us to use the functions from the struct without an instance
+        
+        // Authentication
+        // Create a test token
+        static func createTestToken(for userPayload: UserPayload) throws -> String {
+            let signer = JWTSigner.hs256(key: "TestTokenKey")
+            return try signer.sign(userPayload)
+        }
+        // Make a auth header for the requests with our token
+        static func authHeader(for userPayload: UserPayload) throws -> HTTPHeaders {
+                let token = try createTestToken(for: userPayload)
+                var headers = HTTPHeaders()
+                headers.add(name: "Authorization", value: "Bearer \(token)")
+                return headers
+            }
+        static func mockUserPayload() -> UserPayload {
+            return UserPayload(id: UUID())
+        }
+        
+        // test mock workshops + mock category and reservation TODO
+        /*
+        static func createMockCategory...
+        // use mock cat in mock workshop
+        static func createMockWorkshop...
+        // use mock user and workshop for the mock reservation
+        static func createMockReservation...
+         */
+    }
+    
+    // TESTS - WORKSHOPS
+    
+    @Test("Test GET Workshops")
+    func testGetWorkshops() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            try await app.testing().test(.GET, "workshops", headers: headers) { res async in
+                #expect(res.status == .ok )
+            }
+        }
+    }
+    
 }

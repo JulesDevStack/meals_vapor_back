@@ -50,6 +50,7 @@ func configure(_ app: Application) async throws {
             allowedHeaders: [.accept, .authorization, .contentType, .origin]
         )
     )
+    
     if app.environment != .testing {
         app.middleware.use(corsMiddleware)
     }
