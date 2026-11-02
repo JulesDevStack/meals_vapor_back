@@ -30,4 +30,15 @@ struct lineupTests {
             })
         }
     }
+    
+    
+    
+    @Test("Test2")
+    func test2() async throws {
+        try await withApp { app in
+            try await app.testing().test(.GET, "test2", afterResponse: { res async in
+                #expect(true)
+            })
+        }
+    }
 }

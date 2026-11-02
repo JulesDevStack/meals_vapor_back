@@ -10,6 +10,10 @@ func routes(_ app: Application) throws {
         return "Hello, world!"
     }
     
+    app.get("test2") { req async -> Bool in
+        true
+    }
+    
     try app.register(collection: WorkshopController())
     try app.register(collection: UserController())
     try app.register(collection: ReservationController())

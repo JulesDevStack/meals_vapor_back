@@ -27,10 +27,10 @@ func configure(_ app: Application) async throws {
     app.gatekeeper.config = .init(maxRequests: 100, per: .minute)
     app.middleware.use(GatekeeperMiddleware())
     
-//    app.migrations.add(CreateCategory())
-//    app.migrations.add(CreateWorkshop())
-//    app.migrations.add(CreateUser())
-//    app.migrations.add(CreateReservation())
+    app.migrations.add(CreateCategory())
+    app.migrations.add(CreateWorkshop())
+    app.migrations.add(CreateUser())
+    app.migrations.add(CreateReservation())
     
     // configure URL decoder to use ISO 8601 format
     let decoderConfiguration = URLEncodedFormDecoder(
@@ -47,8 +47,9 @@ func configure(_ app: Application) async throws {
             allowedHeaders: [.accept, .authorization, .contentType, .origin]
         )
     )
-    
-    app.middleware.use(corsMiddleware)
+    if app.environment != .testing {
+        app.middleware.use(corsMiddleware)
+    }
     
     // register routes
     try routes(app)
