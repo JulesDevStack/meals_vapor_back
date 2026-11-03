@@ -29,7 +29,7 @@ struct lineupTests {
         try await app.asyncShutdown()
     }
     
-    // test example to delete at end
+    // EXAMPLE TESTS - to delete at end
     @Test("TestExample")
     func testExemple() async throws {
         try await withApp { app in
@@ -79,7 +79,7 @@ struct lineupTests {
          */
     }
     
-    // TESTS - WORKSHOPS
+    // TESTS - WORKSHOP CONTROLLER
     
     @Test("Test GET Workshops")
     func testGetWorkshops() async throws {
@@ -93,4 +93,60 @@ struct lineupTests {
         }
     }
     
+    // TESTS - USER CONTROLLER
+    
+    @Test("Test Login")
+    func testLogin() async throws {
+        try await withApp { app in
+            
+            let passwordHash = try Bcrypt.hash("testPASS1234")
+            let userMail = "test@email.com"
+            
+            let testUser = User(name: "", password: passwordHash, email: userMail, role: "USER", createdAt: Date.now)
+            try await testUser.save(on: app.db)
+            
+            let loginCreds = LoginRequestDTO(email: "test@email.com", password: "testPASS1234")
+            var token = ""
+            
+            try await app.testing().test(
+                .POST,
+                "login",
+                beforeRequest: { req in
+                    try req.content.encode(loginCreds)
+                },
+                afterResponse: { res async throws in
+                    #expect(res.status == .ok)
+                    token = try res.content.decode(AuthDTO.self).token
+                    #expect(!token.isEmpty)
+                }
+            )
+            return
+        }
+    }
+    
+    // TESTS - RESERVATION CONTROLLER
 }
+
+/*
+ `
+ private func tokenStaff(
+         _ app: Application,
+         email: String = "staff@test.com",
+         password: String = "password123") async throws -> String {
+         try await createUserTest(app, email: email, password: password)
+         
+         let login = LoginRequestDTO(email: email, password: password)
+         var token = ""
+         
+         try await app.testing().test(
+             .POST, "users/login",
+             beforeRequest: { req in
+                 try req.content.encode(login, as: .json)
+             },
+             afterResponse: { res async throws in
+                 token = try res.content.decode(AuthDTO.self).token
+             }
+         )
+         return token
+     }
+ */
