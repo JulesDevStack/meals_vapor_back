@@ -12,7 +12,6 @@ struct WorkshopController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let path = routes.grouped("workshops")
         path.get("", use: index)
-        path.post("", use: createWorkshop)
 
         path.group(":id") { pathId in
             pathId.get(use: getWorkshopWithReservation)
@@ -21,8 +20,9 @@ struct WorkshopController: RouteCollection {
         
         path.get("cate", use: catIndex)
         
-        path.grouped(JWTMiddleware())
-            .get("reservations", use: getReservedWorkshopFromUser)
+        let privateRoutes = path.grouped(JWTMiddleware())
+        privateRoutes.get("reservations", use: getReservedWorkshopFromUser)
+        privateRoutes.post("", use: createWorkshop)
     }
     
     @Sendable
