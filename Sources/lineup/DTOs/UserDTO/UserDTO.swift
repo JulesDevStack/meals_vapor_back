@@ -16,9 +16,10 @@ struct UserDTO: Content {
     let role: String
     let createdAt: Date
 }
-
+/*
 extension UserDTO {
     func toModel() -> User {
         return User(name: name, password: "default", email: email, role: "USER", createdAt: .now)
     }
 }
+*/

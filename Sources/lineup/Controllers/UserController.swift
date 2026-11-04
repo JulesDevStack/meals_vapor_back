@@ -22,12 +22,16 @@ struct UserController: RouteCollection {
         
     }
     
+    @Sendable
     func create(req: Request) async throws -> UserDTO {
+        
         try CreateUserDTO.validate(content: req)
         var newUser = try req.content.decode(CreateUserDTO.self)
         newUser.password = try Bcrypt.hash(newUser.password)
+        
         let userToSave = newUser.toModel()
         try await userToSave.save(on: req.db)
+        
         return userToSave.toDTO()
     }
     
