@@ -19,6 +19,7 @@ func configure(_ app: Application) async throws {
     ), as: .mysql)
     
     app.caches.use(.memory)
+    _ = app.reservationCoordinator
     app.gatekeeper.config = .init(maxRequests: 100, per: .minute)
     app.middleware.use(GatekeeperMiddleware())
     

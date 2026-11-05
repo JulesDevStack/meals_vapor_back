@@ -7,7 +7,7 @@
 import Fluent
 import Vapor
 
-struct WorkshopDTO: Content {
+struct WorkshopDTO: Content, Sendable {
     var id: UUID
     var name: String
     var startTime: Date

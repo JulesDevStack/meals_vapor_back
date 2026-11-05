@@ -33,17 +33,7 @@ struct WorkshopController: RouteCollection {
         guard let id = req.parameters.get("id", as: UUID.self) else {
             throw Abort(.badRequest)
         }
-
-        guard let workshop = try await Workshop.find(id, on: req.db) else {
-            throw Abort(.notFound)
-        }
-
-        try await Reservation.query(on: req.db)
-            .filter(\.$workshop.$id == id)
-            .delete()
-
-        try await workshop.delete(on: req.db)
-
+        try await req.application.reservationCoordinator.deleteWorkshop(id: id, on: req.db)
         return Response(status: .noContent)
     }
     
@@ -154,26 +144,12 @@ struct WorkshopController: RouteCollection {
         
         try UpdateWorkshopDTO.validate(content: req)
         
-        var updatedWorkshop = try req.content.decode(UpdateWorkshopDTO.self)
-        try await updatedWorkshop.customValidation(db: req.db)
-        
-        guard let workshopModel = try await Workshop
-            .query(on: req.db)
-            .filter(\.$id == id)
-            .with(\.$category)
-            .with(\.$reservations)
-            .first()
-        else {
-            throw Abort(.notFound, reason: "Workshop not found.")
-        }
-        
-        updatedWorkshop.totalSubscribers = updatedWorkshop.maxCapacity - workshopModel.reservations.count
-        
-        workshopModel.apply(updatedWorkshop: updatedWorkshop)
-        
-        try await workshopModel.update(on: req.db)
-        
-        return try workshopModel.toWorkshopDTO()
+        let updatedWorkshop = try req.content.decode(UpdateWorkshopDTO.self)
+        return try await req.application.reservationCoordinator.editWorkshop(
+            id: id,
+            update: updatedWorkshop,
+            on: req.db
+        )
     }
 }
 
