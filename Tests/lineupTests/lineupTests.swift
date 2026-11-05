@@ -29,25 +29,6 @@ struct lineupTests {
         try await app.asyncShutdown()
     }
     
-    // EXAMPLE TESTS - to delete at end
-    @Test("TestExample")
-    func testExemple() async throws {
-        try await withApp { app in
-            try await app.testing().test(.GET, "testExample", afterResponse: { res async in
-                #expect(true)
-            })
-        }
-    }
-    
-    @Test("Default")
-    func testDefault() async throws {
-        try await withApp { app in
-            try await app.testing().test(.GET, "", afterResponse: { res async in
-                #expect(res.body.string == "It works!")
-            })
-        }
-    }
-    
     struct TestingHelper {
         
         // Authentication
@@ -106,17 +87,20 @@ struct lineupTests {
         }
         
         static func createTestUser(
+            id: UUID = UUID(),
             name: String = "Tester",
             email: String = "test@email.com",
-            password: String = "testPASS1234"
+            password: String = "testPASS1234",
+            role: String = "user"
         )
         throws -> User {
             let passwordHash = try Bcrypt.hash(password)
             let testUser = User(
+                id: id,
                 name: name,
                 password: passwordHash,
                 email: email,
-                role: "user",
+                role: role,
                 createdAt: Date.now
             )
             return testUser
@@ -140,43 +124,6 @@ struct lineupTests {
     }
     
     // TESTS - WORKSHOP CONTROLLER
-    
-    /*
-     func boot(routes: any RoutesBuilder) throws {
-         let path = routes.grouped("workshops")
-     DONE   path.get("", use: index)
-
-         path.group(":id") { pathId in
-     DONE   pathId.get(use: getWorkshopWithReservation) doing as protected
-     DOING   pathId.put(use: editWorkshop)               doing as protected
-         }
-         
-     DONE    path.get("cate", use: catIndex)
-         
-         let privateRoutes = path.grouped(JWTMiddleware())
-     TODO   privateRoutes.get("reservations", use: getReservedWorkshopFromUser)
-     DONE    privateRoutes.post("", use: createWorkshop)
-     }
-     CREATE WORKSHOP VALIDATIONS, Need test for each
-     static func validations(_ validations: inout Validations) {
-     DONE   validations.add("name", as: String.self, is: !.empty)
-     DONE   validations.add("startTime", as: Date.self, is: .valid)
-     DONE    validations.add("endTime", as: Date.self, is: .valid)
-     DONE    validations.add("maxCapacity", as: Int.self, is: .range(1...Int.max))
-     DONE    validations.add("description", as: String.self, is: .count(5...Int.max))
-     DONE    validations.add("categoryID", as: UUID.self, is: .valid)
-     }
-     UPDATE WORKSHOP VALIDATIONS
-     static func validations(_ validations: inout Validations) {
-     DONE     validations.add("name", as: String.self, is: !.empty)
-     DONE     validations.add("startTime", as: Date.self, is: .valid)
-     DONE     validations.add("endTime", as: Date.self, is: .valid)
-     DONE     validations.add("maxCapacity", as: Int.self, is: .range(1...Int.max))
-     DONE     validations.add("totalSubscribers", as: Int.self, is: .range(1...Int.max))
-     DONE     validations.add("description", as: String.self, is: .count(5...Int.max))
-     DONE     validations.add("categoryID", as: UUID.self, is: .valid)
-      }
-     */
     
     @Test("Test GET Workshops")
     func testGetWorkshops() async throws {
@@ -906,7 +853,6 @@ struct lineupTests {
         }
     }
     
-    
     @Test("Test Login: Wrong Password")
     func testLoginWrongPassword() async throws {
         try await withApp { app in
@@ -942,6 +888,113 @@ struct lineupTests {
             try await app.testing().test(
                 .POST,
                 "login",
+                beforeRequest: { req in
+                    try req.content.encode(loginCreds)
+                },
+                afterResponse: { res async throws in
+                    #expect(res.status == .notFound)
+                }
+            )
+            return
+        }
+    }
+    
+    @Test("Test Login: Admin")
+    func testLoginAdmin() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            let testUser = try TestingHelper.createTestUser(role: "admin")
+            try await testUser.save(on: app.db)
+            
+            let loginCreds = LoginRequestDTO(email: "test@email.com", password: "testPASS1234")
+            var token = ""
+            
+            try await app.testing().test(
+                .POST,
+                "login/admin",
+                headers: headers,
+                beforeRequest: { req in
+                    try req.content.encode(loginCreds)
+                },
+                afterResponse: { res async throws in
+                    #expect(res.status == .ok)
+                    token = try res.content.decode(AuthDTO.self).token
+                    #expect(!token.isEmpty)
+                }
+            )
+            return
+        }
+    }
+    
+    @Test("Test Login: Admin Wrong Role")
+    func testLoginAdminWrongRole() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            let testUser = try TestingHelper.createTestUser()
+            try await testUser.save(on: app.db)
+            
+            let loginCreds = LoginRequestDTO(email: "test@email.com", password: "testPASS1234")
+            
+            try await app.testing().test(
+                .POST,
+                "login/admin",
+                headers: headers,
+                beforeRequest: { req in
+                    try req.content.encode(loginCreds)
+                },
+                afterResponse: { res async throws in
+                    #expect(res.status == .notFound)
+                }
+            )
+            return
+        }
+    }
+    
+    @Test("Test Login: Admin Wrong Email")
+    func testLoginAdminWrongEmail() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            let testUser = try TestingHelper.createTestUser(role: "admin")
+            try await testUser.save(on: app.db)
+            
+            let loginCreds = LoginRequestDTO(email: "wrong@email.com", password: "testPASS1234")
+            
+            try await app.testing().test(
+                .POST,
+                "login/admin",
+                headers: headers,
+                beforeRequest: { req in
+                    try req.content.encode(loginCreds)
+                },
+                afterResponse: { res async throws in
+                    #expect(res.status == .notFound)
+                }
+            )
+            return
+        }
+    }
+    
+    @Test("Test Login: Admin Wrong Password")
+    func testLoginAdminWrongPassword() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            let testUser = try TestingHelper.createTestUser(role: "admin")
+            try await testUser.save(on: app.db)
+            
+            let loginCreds = LoginRequestDTO(email: "wrong@email.com", password: "testWRONG1234")
+            
+            try await app.testing().test(
+                .POST,
+                "login/admin",
+                headers: headers,
                 beforeRequest: { req in
                     try req.content.encode(loginCreds)
                 },
@@ -1120,40 +1173,356 @@ struct lineupTests {
     }
     
     // TESTS - RESERVATION CONTROLLER
-    /*
-    import Fluent
-    import Vapor
-    struct ReservationController: RouteCollection{
-        func boot(routes: any RoutesBuilder) throws {
-            let reservations = routes.grouped("reservations")
-            
-            reservations.get(use: getAll)
-            reservations.get(":id", use: getOneById)
-            
-            let privateRoutes = reservations.grouped(JWTMiddleware())
-            privateRoutes.post("participate", use: participate)
-
-            privateRoutes.delete("cancel",":id", use: cancel)
-        }
-     MISSING routes
-     
-     The final section left to implement in your test suite is the ReservationController. You need to write tests for these remaining endpoints:
-     GET /reservations (getAll)
-     GET /reservations/:id (getOneById)
-     POST /reservations/participate (Protected route - test success and failure when participating in a workshop)
-     DELETE /reservations/cancel/:id (Protected route - test successfully canceling a reservation and handling missing/unauthorized cases)
-     
-    */
+    
     @Test("Test GET Reservations")
     func testGetReservations() async throws {
         try await withApp { app in
             let user = TestingHelper.mockUserPayload()
             let headers = try TestingHelper.authHeader(for: user)
             
-            try await app.testing().test(.GET, "workshops", headers: headers) { res async in
+            try await app.testing().test(.GET, "reservations", headers: headers) { res async in
                 #expect(res.status == .ok )
             }
         }
     }
     
+    @Test("Test GET Reservations: Without Token")
+    func testGetReservationsWithoutToken() async throws {
+        try await withApp { app in
+            
+            try await app.testing().test(.GET, "reservations") { res async in
+                #expect(res.status == .unauthorized )
+            }
+        }
+    }
+    
+    @Test("Test GET Reservations: One")
+    func testGetReservationsOne() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            let testCategory = try TestingHelper.createTestCategory()
+            try await testCategory.save(on: app.db)
+            
+            let testWorkshop = try TestingHelper.createTestWorkshop(categoryID: testCategory.id!)
+            try await testWorkshop.save(on: app.db)
+            
+            let testUser = try TestingHelper.createTestUser()
+            try await testUser.save(on: app.db)
+            
+            let testReservation = try TestingHelper.createTestReservation(
+                workshopID: testWorkshop.id!,
+                userID: testUser.id!
+            )
+            try await testReservation.save(on: app.db)
+            
+            try await app.testing().test(
+                .GET,
+                "reservations/\(testReservation.id!)",
+                headers: headers,
+                afterResponse:  { res async throws in
+                    #expect(res.status == .ok)
+                    let reservationDTO = try res.content.decode(ReservationDTO.self)
+                    #expect(reservationDTO.id == testReservation.id)
+                }
+            )
+        }
+    }
+    
+    @Test("Test GET Reservations: One Invalid Format ID")
+    func testGetReservationsOneInvalidID() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            let testCategory = try TestingHelper.createTestCategory()
+            try await testCategory.save(on: app.db)
+            
+            let testWorkshop = try TestingHelper.createTestWorkshop(categoryID: testCategory.id!)
+            try await testWorkshop.save(on: app.db)
+            
+            let testUser = try TestingHelper.createTestUser()
+            try await testUser.save(on: app.db)
+            
+            let testReservation = try TestingHelper.createTestReservation(
+                workshopID: testWorkshop.id!,
+                userID: testUser.id!
+            )
+            try await testReservation.save(on: app.db)
+            
+            try await app.testing().test(
+                .GET,
+                "reservations/InvalidID567345678",
+                headers: headers,
+                afterResponse:  { res async throws in
+                    #expect(res.status == .badRequest)
+                }
+            )
+        }
+    }
+    
+    @Test("Test GET Reservations: One Not Found ID")
+    func testGetReservationsOneNotFoundID() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            let testCategory = try TestingHelper.createTestCategory()
+            try await testCategory.save(on: app.db)
+            
+            let testWorkshop = try TestingHelper.createTestWorkshop(categoryID: testCategory.id!)
+            try await testWorkshop.save(on: app.db)
+            
+            let testUser = try TestingHelper.createTestUser()
+            try await testUser.save(on: app.db)
+            
+            let testReservation = try TestingHelper.createTestReservation(
+                workshopID: testWorkshop.id!,
+                userID: testUser.id!
+            )
+            try await testReservation.save(on: app.db)
+            
+            try await app.testing().test(
+                .GET,
+                "reservations/\(UUID())",
+                headers: headers,
+                afterResponse:  { res async throws in
+                    #expect(res.status == .notFound)
+                }
+            )
+        }
+    }
+    
+    @Test("Test GET Reservations: For User")
+    func testGetReservationsForUser() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            let testCategory = try TestingHelper.createTestCategory()
+            try await testCategory.save(on: app.db)
+            
+            let testWorkshop = try TestingHelper.createTestWorkshop(categoryID: testCategory.id!)
+            try await testWorkshop.save(on: app.db)
+            
+            let testUser = try TestingHelper.createTestUser()
+            testUser.id = user.id
+            try await testUser.save(on: app.db)
+            
+            let testReservation = try TestingHelper.createTestReservation(
+                workshopID: testWorkshop.id!,
+                userID: testUser.id!
+            )
+            try await testReservation.save(on: app.db)
+            
+            try await app.testing().test(
+                .GET,
+                "reservations/available",
+                headers: headers,
+                afterResponse:  { res async throws in
+                    #expect(res.status == .ok)
+                    #expect(res.content.contentType == .json)
+                    let availableReservations = try res.content.decode([WorkshopWithUserReservationDTO].self)
+                    #expect(!availableReservations.isEmpty)
+                    #expect(availableReservations.first?.reservationDTO?.id == testReservation.id)
+                }
+            )
+        }
+    }
+    
+    @Test("Test Reservations Participate")
+    func testReservationsParticipate() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            let testCategory = try TestingHelper.createTestCategory()
+            try await testCategory.save(on: app.db)
+            
+            let testWorkshop = try TestingHelper.createTestWorkshop(categoryID: testCategory.id!)
+            try await testWorkshop.save(on: app.db)
+            
+            let testUser = try TestingHelper.createTestUser()
+            testUser.id = user.id
+            try await testUser.save(on: app.db)
+            
+            let testReservationDTO = CreateReservationDTO(
+                workshopID: testWorkshop.id!,
+                userID: testUser.id!
+            )
+            
+            try await app.testing().test(
+                .POST,
+                "reservations/participate",
+                headers: headers,
+                beforeRequest: { req in
+                    try req.content.encode(testReservationDTO)
+                },
+                afterResponse:  { res async throws in
+                    #expect(res.status == .created)
+                }
+            )
+        }
+    }
+    
+    @Test("Test Reservations Participate: User Not Found")
+    func testReservationsParticipateUserNotFound() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            let testCategory = try TestingHelper.createTestCategory()
+            try await testCategory.save(on: app.db)
+            
+            let testWorkshop = try TestingHelper.createTestWorkshop(categoryID: testCategory.id!)
+            try await testWorkshop.save(on: app.db)
+            
+            let testUser = try TestingHelper.createTestUser()
+//            testUser.id = user.id <-- payload user is absent from db
+            try await testUser.save(on: app.db)
+            
+            let testReservationDTO = CreateReservationDTO(
+                workshopID: testWorkshop.id!,
+                userID: testUser.id!
+            )
+            
+            try await app.testing().test(
+                .POST,
+                "reservations/participate",
+                headers: headers,
+                beforeRequest: { req in
+                    try req.content.encode(testReservationDTO)
+                },
+                afterResponse:  { res async throws in
+                    #expect(res.status == .notFound)
+                }
+            )
+        }
+    }
+    
+    @Test("Test Reservations Participate: Duplicate")
+    func testReservationsParticipateDuplicate() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            let testCategory = try TestingHelper.createTestCategory()
+            try await testCategory.save(on: app.db)
+            
+            let testWorkshop = try TestingHelper.createTestWorkshop(categoryID: testCategory.id!)
+            try await testWorkshop.save(on: app.db)
+            
+            let testUser = try TestingHelper.createTestUser()
+            testUser.id = user.id
+            try await testUser.save(on: app.db)
+            
+            let testReservation = try TestingHelper.createTestReservation(
+                workshopID: testWorkshop.id!,
+                userID: testUser.id!
+            )
+            try await testReservation.save(on: app.db)
+            
+            let testReservationDTO = CreateReservationDTO(
+                workshopID: testWorkshop.id!,
+                userID: testUser.id!
+            )
+            
+            try await app.testing().test(
+                .POST,
+                "reservations/participate",
+                headers: headers,
+                beforeRequest: { req in
+                    try req.content.encode(testReservationDTO)
+                },
+                afterResponse:  { res async throws in
+                    #expect(res.status == .custom(code: 409, reasonPhrase: "Reservation already exist."))
+                }
+            )
+        }
+    }
+    
+    @Test("Test Delete Reservation")
+    func testReservationsDelete() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            let testCategory = try TestingHelper.createTestCategory()
+            try await testCategory.save(on: app.db)
+            
+            let testWorkshop = try TestingHelper.createTestWorkshop(categoryID: testCategory.id!)
+            try await testWorkshop.save(on: app.db)
+            
+            let testUser = try TestingHelper.createTestUser()
+            testUser.id = user.id
+            try await testUser.save(on: app.db)
+            
+            let testReservation = try TestingHelper.createTestReservation(
+                workshopID: testWorkshop.id!,
+                userID: testUser.id!
+            )
+            try await testReservation.save(on: app.db)
+            
+            try await app.testing().test(
+                .DELETE,
+                "reservations/cancel/\(testReservation.id!)",
+                headers: headers,
+                afterResponse:  { res async throws in
+                    #expect(res.status == .noContent)
+                }
+            )
+        }
+    }
+    
+    @Test("Test Delete Reservation: Reservation Not Found")
+    func testReservationsDeleteReservationNotFound() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            try await app.testing().test(
+                .DELETE,
+                "reservations/cancel/\(UUID())",
+                headers: headers,
+                afterResponse:  { res async throws in
+                    #expect(res.status == .notFound)
+                }
+            )
+        }
+    }
+    
+    @Test("Test Delete Reservation: Forbidden")
+    func testReservationsDeleteForbidden() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            let testCategory = try TestingHelper.createTestCategory()
+            try await testCategory.save(on: app.db)
+            
+            let testWorkshop = try TestingHelper.createTestWorkshop(categoryID: testCategory.id!)
+            try await testWorkshop.save(on: app.db)
+            
+            let testUser = try TestingHelper.createTestUser()
+//            testUser.id = user.id <-- forbidden because our token.id and res.id are not the same
+            try await testUser.save(on: app.db)
+            
+            let testReservation = try TestingHelper.createTestReservation(
+                workshopID: testWorkshop.id!,
+                userID: testUser.id!
+            )
+            try await testReservation.save(on: app.db)
+            
+            try await app.testing().test(
+                .DELETE,
+                "reservations/cancel/\(testReservation.id!)",
+                headers: headers,
+                afterResponse:  { res async throws in
+                    #expect(res.status == .forbidden)
+                }
+            )
+        }
+    }
+    // end of Test Suite
 }
