@@ -1524,57 +1524,5 @@ struct lineupTests {
             )
         }
     }
-    
     // end of Test Suite
 }
-/*
-try await app.testing().test(
-    .GET,
-    "workshops",
-    headers: headers,
-    afterResponse: { res async throws in
-        #expect(res.status == .ok)
-        #expect(res.content.contentType == .json)
-        let workshops = try res.content.decode([WorkshopDTO].self)
-        #expect(!workshops.isEmpty)
-        #expect(workshops.first?.name == "Test Workshop")
-    }
-)
-}
- 
- 
- @Test("Test Create Workshop")
- func testCreateWorkshop() async throws {
-     try await withApp { app in
-         let user = TestingHelper.mockUserPayload()
-         let headers = try TestingHelper.authHeader(for: user)
-         
-         let testCategory = try TestingHelper.createTestCategory()
-         try await testCategory.save(on: app.db)
-         
-         let testWorkshop = try TestingHelper.createTestWorkshop(categoryID: testCategory.id!)
-         
-         let testCreateWorkshopDTO = CreateWorkshopDTO(
-             name: testWorkshop.name,
-             startTime: testWorkshop.startTime,
-             endTime: testWorkshop.endTime,
-             maxCapacity: testWorkshop.maxCapacity,
-             description: testWorkshop.description,
-             categoryID: testWorkshop.$category.id
-         )
-         
-         try await app.testing().test(
-             .POST,
-             "workshops",
-             headers: headers,
-             beforeRequest: { req in
-                 try req.content.encode(testCreateWorkshopDTO)
-             },
-             afterResponse: { res async throws in
-                 #expect(res.status == .created)
-             }
-         )
-         return
-     }
- }
-*/
