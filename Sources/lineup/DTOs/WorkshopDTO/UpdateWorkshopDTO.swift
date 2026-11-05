@@ -21,7 +21,7 @@ struct UpdateWorkshopDTO: Content, Validatable {
         validations.add("startTime", as: Date.self, is: .valid)
         validations.add("endTime", as: Date.self, is: .valid)
         validations.add("maxCapacity", as: Int.self, is: .range(1...Int.max))
-        validations.add("totalSubscribers", as: Int.self, is: .range(1...Int.max))
+        validations.add("totalSubscribers", as: Int.self, is: .range(0...Int.max))
         validations.add("description", as: String.self, is: .count(5...Int.max))
         validations.add("categoryID", as: UUID.self, is: .valid)
     }

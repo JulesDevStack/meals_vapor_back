@@ -15,8 +15,9 @@ struct ReservationController: RouteCollection{
         reservations.get(":id", use: getOneById)
         
         let privateRoutes = reservations.grouped(JWTMiddleware())
+        
+        privateRoutes.get("available", use: getWorkshopsForUser)
         privateRoutes.post("participate", use: participate)
-
         privateRoutes.delete("cancel",":id", use: cancel)
     }
     
@@ -48,6 +49,30 @@ struct ReservationController: RouteCollection{
         }
         
         return reservation.toReservationDTO()
+    }
+    
+    @Sendable
+    func getWorkshopsForUser(req: Request) async throws -> [WorkshopWithUserReservationDTO] {
+        let payload = try req.auth.require(UserPayload.self)
+
+        let workshops = try await Workshop
+            .query(on: req.db)
+            .with(\.$reservations)
+            .with(\.$category)
+            .all()
+
+        return try workshops.map { workshop in
+            let userReservation = workshop.reservations.first { reservation in
+                reservation.$user.id == payload.id
+            }
+
+            return WorkshopWithUserReservationDTO(
+                workshopDTO: try workshop.toWorkshopDTO(),
+                reservationDTO: try userReservation.map { reservation in
+                    try reservation.toReservationInlineDTO()
+                }
+            )
+        }
     }
     
     
