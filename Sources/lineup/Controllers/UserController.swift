@@ -22,6 +22,7 @@ struct UserController: RouteCollection {
         
     }
     
+    @Sendable
     func create(req: Request) async throws -> UserDTO {
         try CreateUserDTO.validate(content: req)
         var newUser = try req.content.decode(CreateUserDTO.self)

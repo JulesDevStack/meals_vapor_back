@@ -10,7 +10,9 @@ import Vapor
 
 struct WorkshopController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
-        let path = routes.grouped("workshops")
+        var path = routes.grouped("workshops")
+        path = path.grouped(JWTMiddleware())
+        
         path.get("", use: index)
         path.post("", use: createWorkshop)
 
@@ -19,10 +21,30 @@ struct WorkshopController: RouteCollection {
             pathId.put(use: editWorkshop)
         }
         
+        path.delete(":id", use: deleteWorkshop)
+        
         path.get("cate", use: catIndex)
         
-        path.grouped(JWTMiddleware())
-            .get("reservations", use: getReservedWorkshopFromUser)
+        path.get("reservations", use: getReservedWorkshopFromUser)
+    }
+    
+    @Sendable
+    func deleteWorkshop(req: Request) async throws -> Response {
+        guard let id = req.parameters.get("id", as: UUID.self) else {
+            throw Abort(.badRequest)
+        }
+
+        guard let workshop = try await Workshop.find(id, on: req.db) else {
+            throw Abort(.notFound)
+        }
+
+        try await Reservation.query(on: req.db)
+            .filter(\.$workshop.$id == id)
+            .delete()
+
+        try await workshop.delete(on: req.db)
+
+        return Response(status: .noContent)
     }
     
     @Sendable
@@ -92,8 +114,8 @@ struct WorkshopController: RouteCollection {
                     wo.with(\.$category)
                 })
             })
-                .first()
-                else {
+            .first()
+        else {
             throw Abort(.notFound, reason: "User not found")
         }
         

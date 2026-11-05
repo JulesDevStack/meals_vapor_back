@@ -60,3 +60,8 @@ struct WorkshopWithReservationDTO: Content {
     var workshopDTO: WorkshopDTO
     var reservations: [ReservationDTO]
 }
+
+struct WorkshopWithUserReservationDTO: Content {
+    let workshopDTO: WorkshopDTO
+    let reservationDTO: ReservationInlineDTO?
+}
