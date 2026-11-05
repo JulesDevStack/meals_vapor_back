@@ -7,18 +7,17 @@
 
 import Fluent
 import Vapor
+
 struct ReservationController: RouteCollection{
     func boot(routes: any RoutesBuilder) throws {
-        let reservations = routes.grouped("reservations")
+        var reservations = routes.grouped("reservations")
+        reservations = reservations.grouped(JWTMiddleware())
         
         reservations.get(use: getAll)
         reservations.get(":id", use: getOneById)
-        
-        let privateRoutes = reservations.grouped(JWTMiddleware())
-        
-        privateRoutes.get("available", use: getWorkshopsForUser)
-        privateRoutes.post("participate", use: participate)
-        privateRoutes.delete("cancel",":id", use: cancel)
+        reservations.get("available", use: getWorkshopsForUser)
+        reservations.post("participate", use: participate)
+        reservations.delete("cancel",":id", use: cancel)
     }
     
     
@@ -113,7 +112,14 @@ struct ReservationController: RouteCollection{
         guard let reservation = try await Reservation.find(id, on: req.db) else {
             throw Abort(.notFound)
         }
-
+        
+        let payload = try req.auth.require(UserPayload.self)
+        
+        guard reservation.$user.id == payload.id else {
+            throw Abort(.forbidden, reason: "Not authorized")
+        }
+        
+                
         reservation.status = ReservationStatus.cancel.rawValue
 
         try await reservation.update(on: req.db)

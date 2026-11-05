@@ -14,18 +14,17 @@ struct WorkshopController: RouteCollection {
         path = path.grouped(JWTMiddleware())
         
         path.get("", use: index)
-        path.post("", use: createWorkshop)
 
         path.group(":id") { pathId in
             pathId.get(use: getWorkshopWithReservation)
             pathId.put(use: editWorkshop)
         }
-        
-        path.delete(":id", use: deleteWorkshop)
-        
         path.get("cate", use: catIndex)
         
         path.get("reservations", use: getReservedWorkshopFromUser)
+        path.post("", use: createWorkshop)
+        
+        path.delete(":id", use: deleteWorkshop)
     }
     
     @Sendable

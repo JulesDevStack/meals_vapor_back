@@ -17,8 +17,13 @@ struct UserDTO: Content {
     let createdAt: Date
 }
 
+struct AuthDTO: Content {
+    let token: String
+}
+/*
 extension UserDTO {
     func toModel() -> User {
         return User(name: name, password: "default", email: email, role: "USER", createdAt: .now)
     }
 }
+*/
