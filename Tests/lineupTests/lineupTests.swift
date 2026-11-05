@@ -108,7 +108,8 @@ struct lineupTests {
         static func createTestUser(
             name: String = "Tester",
             email: String = "test@email.com",
-            password: String = "testPASS1234"
+            password: String = "testPASS1234",
+            role: String = "user"
         )
         throws -> User {
             let passwordHash = try Bcrypt.hash(password)
@@ -116,7 +117,7 @@ struct lineupTests {
                 name: name,
                 password: passwordHash,
                 email: email,
-                role: "user",
+                role: role,
                 createdAt: Date.now
             )
             return testUser
@@ -140,43 +141,6 @@ struct lineupTests {
     }
     
     // TESTS - WORKSHOP CONTROLLER
-    
-    /*
-     func boot(routes: any RoutesBuilder) throws {
-         let path = routes.grouped("workshops")
-     DONE   path.get("", use: index)
-
-         path.group(":id") { pathId in
-     DONE   pathId.get(use: getWorkshopWithReservation) doing as protected
-     DOING   pathId.put(use: editWorkshop)               doing as protected
-         }
-         
-     DONE    path.get("cate", use: catIndex)
-         
-         let privateRoutes = path.grouped(JWTMiddleware())
-     TODO   privateRoutes.get("reservations", use: getReservedWorkshopFromUser)
-     DONE    privateRoutes.post("", use: createWorkshop)
-     }
-     CREATE WORKSHOP VALIDATIONS, Need test for each
-     static func validations(_ validations: inout Validations) {
-     DONE   validations.add("name", as: String.self, is: !.empty)
-     DONE   validations.add("startTime", as: Date.self, is: .valid)
-     DONE    validations.add("endTime", as: Date.self, is: .valid)
-     DONE    validations.add("maxCapacity", as: Int.self, is: .range(1...Int.max))
-     DONE    validations.add("description", as: String.self, is: .count(5...Int.max))
-     DONE    validations.add("categoryID", as: UUID.self, is: .valid)
-     }
-     UPDATE WORKSHOP VALIDATIONS
-     static func validations(_ validations: inout Validations) {
-     DONE     validations.add("name", as: String.self, is: !.empty)
-     DONE     validations.add("startTime", as: Date.self, is: .valid)
-     DONE     validations.add("endTime", as: Date.self, is: .valid)
-     DONE     validations.add("maxCapacity", as: Int.self, is: .range(1...Int.max))
-     DONE     validations.add("totalSubscribers", as: Int.self, is: .range(1...Int.max))
-     DONE     validations.add("description", as: String.self, is: .count(5...Int.max))
-     DONE     validations.add("categoryID", as: UUID.self, is: .valid)
-      }
-     */
     
     @Test("Test GET Workshops")
     func testGetWorkshops() async throws {
@@ -906,7 +870,6 @@ struct lineupTests {
         }
     }
     
-    
     @Test("Test Login: Wrong Password")
     func testLoginWrongPassword() async throws {
         try await withApp { app in
@@ -942,6 +905,113 @@ struct lineupTests {
             try await app.testing().test(
                 .POST,
                 "login",
+                beforeRequest: { req in
+                    try req.content.encode(loginCreds)
+                },
+                afterResponse: { res async throws in
+                    #expect(res.status == .notFound)
+                }
+            )
+            return
+        }
+    }
+    
+    @Test("Test Login: Admin")
+    func testLoginAdmin() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            let testUser = try TestingHelper.createTestUser(role: "admin")
+            try await testUser.save(on: app.db)
+            
+            let loginCreds = LoginRequestDTO(email: "test@email.com", password: "testPASS1234")
+            var token = ""
+            
+            try await app.testing().test(
+                .POST,
+                "login/admin",
+                headers: headers,
+                beforeRequest: { req in
+                    try req.content.encode(loginCreds)
+                },
+                afterResponse: { res async throws in
+                    #expect(res.status == .ok)
+                    token = try res.content.decode(AuthDTO.self).token
+                    #expect(!token.isEmpty)
+                }
+            )
+            return
+        }
+    }
+    
+    @Test("Test Login: Admin Wrong Role")
+    func testLoginAdminWrongRole() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            let testUser = try TestingHelper.createTestUser()
+            try await testUser.save(on: app.db)
+            
+            let loginCreds = LoginRequestDTO(email: "test@email.com", password: "testPASS1234")
+            
+            try await app.testing().test(
+                .POST,
+                "login/admin",
+                headers: headers,
+                beforeRequest: { req in
+                    try req.content.encode(loginCreds)
+                },
+                afterResponse: { res async throws in
+                    #expect(res.status == .notFound)
+                }
+            )
+            return
+        }
+    }
+    
+    @Test("Test Login: Admin Wrong Email")
+    func testLoginAdminWrongEmail() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            let testUser = try TestingHelper.createTestUser(role: "admin")
+            try await testUser.save(on: app.db)
+            
+            let loginCreds = LoginRequestDTO(email: "wrong@email.com", password: "testPASS1234")
+            
+            try await app.testing().test(
+                .POST,
+                "login/admin",
+                headers: headers,
+                beforeRequest: { req in
+                    try req.content.encode(loginCreds)
+                },
+                afterResponse: { res async throws in
+                    #expect(res.status == .notFound)
+                }
+            )
+            return
+        }
+    }
+    
+    @Test("Test Login: Admin Wrong Password")
+    func testLoginAdminWrongPassword() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            let testUser = try TestingHelper.createTestUser(role: "admin")
+            try await testUser.save(on: app.db)
+            
+            let loginCreds = LoginRequestDTO(email: "wrong@email.com", password: "testWRONG1234")
+            
+            try await app.testing().test(
+                .POST,
+                "login/admin",
+                headers: headers,
                 beforeRequest: { req in
                     try req.content.encode(loginCreds)
                 },
@@ -1150,7 +1220,7 @@ struct lineupTests {
             let user = TestingHelper.mockUserPayload()
             let headers = try TestingHelper.authHeader(for: user)
             
-            try await app.testing().test(.GET, "workshops", headers: headers) { res async in
+            try await app.testing().test(.GET, "reservations", headers: headers) { res async in
                 #expect(res.status == .ok )
             }
         }
