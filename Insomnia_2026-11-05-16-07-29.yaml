@@ -1,0 +1,449 @@
+type: spec.insomnia.rest/5.0
+schema_version: "5.1"
+name: Meals API
+meta:
+  id: wrk_cc672616e5254357b8ba45ea2e0a6784
+  created: 1792594425452
+  modified: 1792594425452
+  description: ""
+collection:
+  - name: reservations
+    meta:
+      id: fld_a28d8ffc0b3f4b1fbe5c03e378a4409b
+      created: 1791281323798
+      modified: 1791309197016
+      sortKey: -1791281510302
+      description: ""
+    children:
+      - url: localhost:8081/reservations
+        name: getAll
+        meta:
+          id: req_fc609b27d7804d39b9aa365bf22e3a0b
+          created: 1791281326928
+          modified: 1793890995598
+          isPrivate: false
+          description: ""
+          sortKey: -1791281326928
+        method: GET
+        authentication:
+          type: bearer
+          disabled: false
+          token: "{% response 'body', 'req_65dc79a94ceb4f27b681f67b1e4ed54e',
+            'b64::JC50b2tlbg==::46b', 'never', 60 %}"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: localhost:8081/reservations/06E1F69E-A0F5-4710-B59E-DB5B52EA10B2
+        name: getOneById
+        meta:
+          id: req_b5c8fc843eda4a36aba89695dcc48819
+          created: 1791281422123
+          modified: 1793891012539
+          isPrivate: false
+          description: ""
+          sortKey: -1790998974821
+        method: GET
+        authentication:
+          type: bearer
+          token: "{% response 'body', 'req_65dc79a94ceb4f27b681f67b1e4ed54e',
+            'b64::JC50b2tlbg==::46b', 'never', 60 %}"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: localhost:8081/reservations/participate
+        name: participate
+        meta:
+          id: req_238828b3019a43f4b506f2e57479db6c
+          created: 1791281426481
+          modified: 1793891041687
+          isPrivate: false
+          description: ""
+          sortKey: -1790857798767.5
+        method: POST
+        body:
+          mimeType: multipart/form-data
+          params:
+            - name: workshopID
+              value: 50575420-8324-4F0C-85C1-436CEDB584B1
+              description: ""
+              disabled: false
+        headers:
+          - name: Content-Type
+            value: multipart/form-data
+        authentication:
+          type: bearer
+          token: "{% response 'body', 'req_65dc79a94ceb4f27b681f67b1e4ed54e',
+            'b64::JC50b2tlbg==::46b', 'never', 60 %}"
+          prefix: ""
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: localhost:8081/reservations/cancel/0854908E-302D-4A97-8337-2C11624CF1E1
+        name: cancel
+        meta:
+          id: req_4e7d88cb58124592913d4099a8cfc7f8
+          created: 1791282144955
+          modified: 1793891116354
+          isPrivate: false
+          description: ""
+          sortKey: -1790514729318.75
+        method: DELETE
+        authentication:
+          type: bearer
+          token: "{% response 'body', 'req_65dc79a94ceb4f27b681f67b1e4ed54e',
+            'b64::JC50b2tlbg==::46b', 'never', 60 %}"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: localhost:8081/reservations/available
+        name: getAllWithWorkshop
+        meta:
+          id: req_209e8c0eb5814a679a1da7cf1f55ec8b
+          created: 1793805017844
+          modified: 1793890830065
+          isPrivate: false
+          description: ""
+          sortKey: -1790928386794.25
+        method: GET
+        authentication:
+          type: bearer
+          token: "{% response 'body', 'req_65dc79a94ceb4f27b681f67b1e4ed54e',
+            'b64::JC50b2tlbg==::46b', 'never', 60 %}"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: User Auth
+    meta:
+      id: fld_b3183d33a5cd4deea1a6191f16584a8b
+      created: 1791281480695
+      modified: 1791970332760
+      sortKey: -1791281510202
+      description: ""
+    children:
+      - url: localhost:8081/register
+        name: create User
+        meta:
+          id: req_e5221754e73f4c8b9b8bb1de1cd670f6
+          created: 1790854132875
+          modified: 1793787334164
+          isPrivate: false
+          description: ""
+          sortKey: -1791281487898
+        method: POST
+        body:
+          mimeType: multipart/form-data
+          params:
+            - name: email
+              value: mail@truc.commmmmm
+              description: ""
+              disabled: false
+            - name: name
+              value: Jules
+              description: ""
+              disabled: false
+            - name: password
+              value: bon-mot-de-passe1
+              description: ""
+              disabled: false
+        headers:
+          - name: Content-Type
+            value: multipart/form-data
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: localhost:8081/login
+        name: login user
+        meta:
+          id: req_65dc79a94ceb4f27b681f67b1e4ed54e
+          created: 1790859160719
+          modified: 1793696848453
+          isPrivate: false
+          description: ""
+          sortKey: -1791281487998
+        method: POST
+        body:
+          mimeType: multipart/form-data
+          params:
+            - name: email
+              value: mail@truc.fr
+              description: ""
+              disabled: false
+            - name: password
+              value: bon-mot-de-passe
+              description: ""
+              disabled: false
+        headers:
+          - name: Content-Type
+            value: multipart/form-data
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: Workshop
+    meta:
+      id: fld_e8f8fb161df545fab43b8511e5a75445
+      created: 1791281510102
+      modified: 1791309200981
+      sortKey: -1791281510402
+      description: ""
+    children:
+      - url: localhost:8081/workshops/50575420-8324-4F0C-85C1-436CEDB584B1
+        name: getOneWithReservation
+        meta:
+          id: req_d11431abafac4573b23697cd86e5f303
+          created: 1790716622714
+          modified: 1793891051790
+          isPrivate: false
+          description: ""
+          sortKey: -1791281516807
+        method: GET
+        authentication:
+          type: bearer
+          token: "{% response 'body', 'req_65dc79a94ceb4f27b681f67b1e4ed54e',
+            'b64::JC50b2tlbg==::46b', 'never', 60 %}"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: localhost:8081/workshops
+        name: create
+        meta:
+          id: req_919862f6429a4cd1a206cf37291b7260
+          created: 1790718211964
+          modified: 1793890919595
+          isPrivate: false
+          description: ""
+          sortKey: -1791281516707
+        method: POST
+        body:
+          mimeType: multipart/form-data
+          params:
+            - name: name
+              value: mafessedroiteetgauche2
+              description: ""
+              disabled: false
+            - name: startTime
+              value: "1790718478"
+              description: ""
+              disabled: false
+              multiline: false
+              type: text
+            - name: endTime
+              value: "1790718480"
+              description: ""
+              disabled: false
+            - name: maxCapacity
+              value: "200"
+              description: ""
+              disabled: false
+            - name: description
+              value: trucmuche
+              description: ""
+              disabled: false
+            - name: categoryID
+              value: 6F8A98C6-D2CC-11F1-9C79-020000000000
+              description: ""
+              disabled: false
+        headers:
+          - name: Content-Type
+            value: multipart/form-data
+        authentication:
+          type: bearer
+          token: "{% response 'body', 'req_65dc79a94ceb4f27b681f67b1e4ed54e',
+            'b64::JC50b2tlbg==::46b', 'never', 60 %}"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: localhost:8081/workshops
+        name: getAll
+        meta:
+          id: req_e48ca748093a4843a144292742c1fdf4
+          created: 1791281556468
+          modified: 1793890911853
+          isPrivate: false
+          description: ""
+          sortKey: -1791281516757
+        method: GET
+        authentication:
+          type: bearer
+          token: "{% response 'body', 'req_65dc79a94ceb4f27b681f67b1e4ed54e',
+            'b64::JC50b2tlbg==::46b', 'never', 60 %}"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: localhost:8081/workshops/50575420-8324-4F0C-85C1-436CEDB584B1
+        name: edit
+        meta:
+          id: req_8a9048925c1e4cf7b03a6a01d9dbf5c0
+          created: 1791300639080
+          modified: 1793891037016
+          isPrivate: false
+          description: ""
+          sortKey: -1791281502402.5
+        method: PUT
+        body:
+          mimeType: multipart/form-data
+          params:
+            - name: name
+              value: meilleur atelier du monde 444
+              description: ""
+              disabled: false
+            - name: startTime
+              value: "1790718478"
+              description: ""
+              disabled: false
+              multiline: false
+              type: text
+            - name: endTime
+              value: "1790718480"
+              description: ""
+              disabled: false
+            - name: maxCapacity
+              value: "9999"
+              description: ""
+              disabled: false
+            - name: description
+              value: "oui oui "
+              description: ""
+              disabled: false
+            - name: categoryID
+              value: 6F8A98C6-D2CC-11F1-9C79-020000000000
+              description: ""
+              disabled: false
+            - name: totalSubscribers
+              value: "22"
+              description: ""
+              disabled: false
+        headers:
+          - name: Content-Type
+            value: multipart/form-data
+        authentication:
+          type: bearer
+          token: "{% response 'body', 'req_65dc79a94ceb4f27b681f67b1e4ed54e',
+            'b64::JC50b2tlbg==::46b', 'never', 60 %}"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: localhost:8081/workshops/reservations
+        name: getReservationFromUser
+        meta:
+          id: req_ac26260b67c347c0bedb3f07d785782f
+          created: 1792669923997
+          modified: 1793799718475
+          isPrivate: false
+          description: ""
+          sortKey: -1791281516782
+        method: GET
+        authentication:
+          type: bearer
+          token: "{% response 'body', 'req_65dc79a94ceb4f27b681f67b1e4ed54e',
+            'b64::JC50b2tlbg==::46b', 'never', 60 %}"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: Category
+    meta:
+      id: fld_ca01a3d85346434585acc84f0d855fbb
+      created: 1792591632859
+      modified: 1792591632859
+      sortKey: -1792591632859
+      description: ""
+    children:
+      - url: localhost:8081/workshops/cate
+        name: getAll
+        meta:
+          id: req_628768cad7ef4f589953ebec5ab4dc21
+          created: 1792585730434
+          modified: 1793890866111
+          isPrivate: false
+          description: ""
+          sortKey: -1792591636231
+        method: GET
+        authentication:
+          type: bearer
+          token: "{% response 'body', 'req_65dc79a94ceb4f27b681f67b1e4ed54e',
+            'b64::JC50b2tlbg==::46b', 'never', 60 %}"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_6b807ecdc8f642e2b89aa719df7fe2cb
+    created: 1791309114872
+    modified: 1791970332742
+environments:
+  name: Base Environment
+  meta:
+    id: env_433ba4bb3b184119a900d59b56e8a73f
+    created: 1791309114872
+    modified: 1791970332747
+    isPrivate: false
+spec:
+  meta:
+    id: spc_391ce74bf999441888d0c5c6199dc886
+    created: 1792594425452
+    modified: 1792594425453
