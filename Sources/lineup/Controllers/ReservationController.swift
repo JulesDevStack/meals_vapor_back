@@ -15,6 +15,7 @@ struct ReservationController: RouteCollection{
         
         reservations.get(use: getAll)
         reservations.get(":id", use: getOneById)
+        reservations.get("available", use: getWorkshopsForUser)
         reservations.post("participate", use: participate)
         reservations.delete("cancel",":id", use: cancel)
     }
@@ -47,6 +48,30 @@ struct ReservationController: RouteCollection{
         }
         
         return reservation.toReservationDTO()
+    }
+    
+    @Sendable
+    func getWorkshopsForUser(req: Request) async throws -> [WorkshopWithUserReservationDTO] {
+        let payload = try req.auth.require(UserPayload.self)
+
+        let workshops = try await Workshop
+            .query(on: req.db)
+            .with(\.$reservations)
+            .with(\.$category)
+            .all()
+
+        return try workshops.map { workshop in
+            let userReservation = workshop.reservations.first { reservation in
+                reservation.$user.id == payload.id
+            }
+
+            return WorkshopWithUserReservationDTO(
+                workshopDTO: try workshop.toWorkshopDTO(),
+                reservationDTO: try userReservation.map { reservation in
+                    try reservation.toReservationInlineDTO()
+                }
+            )
+        }
     }
     
     

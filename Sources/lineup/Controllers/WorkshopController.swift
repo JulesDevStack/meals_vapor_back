@@ -12,6 +12,7 @@ struct WorkshopController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         var path = routes.grouped("workshops")
         path = path.grouped(JWTMiddleware())
+        
         path.get("", use: index)
 
         path.group(":id") { pathId in
@@ -22,6 +23,27 @@ struct WorkshopController: RouteCollection {
         
         path.get("reservations", use: getReservedWorkshopFromUser)
         path.post("", use: createWorkshop)
+        
+        path.delete(":id", use: deleteWorkshop)
+    }
+    
+    @Sendable
+    func deleteWorkshop(req: Request) async throws -> Response {
+        guard let id = req.parameters.get("id", as: UUID.self) else {
+            throw Abort(.badRequest)
+        }
+
+        guard let workshop = try await Workshop.find(id, on: req.db) else {
+            throw Abort(.notFound)
+        }
+
+        try await Reservation.query(on: req.db)
+            .filter(\.$workshop.$id == id)
+            .delete()
+
+        try await workshop.delete(on: req.db)
+
+        return Response(status: .noContent)
     }
     
     @Sendable
@@ -91,8 +113,8 @@ struct WorkshopController: RouteCollection {
                     wo.with(\.$category)
                 })
             })
-                .first()
-                else {
+            .first()
+        else {
             throw Abort(.notFound, reason: "User not found")
         }
         
