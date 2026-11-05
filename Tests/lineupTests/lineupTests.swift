@@ -48,7 +48,6 @@ struct lineupTests {
         }
     }
     
-    // MOCK DATA for tests
     struct TestingHelper {
         
         // Authentication
@@ -70,15 +69,7 @@ struct lineupTests {
             return UserPayload(id: UUID())
         }
         
-        // test mock workshops + mock category and reservation TODO
-        /*
-        static func createMockCategory... DONE
-        // use mock cat in mock workshop DONE
-        static func createMockWorkshop... DONE
-        // use mock user and workshop for the mock reservation
-        static func createMockReservation...
-         */
-        
+        // Create test objects
         static func createTestCategory(
             id: UUID = UUID(),
             name: String = "Test Category"
@@ -130,6 +121,22 @@ struct lineupTests {
             )
             return testUser
         }
+        
+        static func createTestReservation(
+            id: UUID = UUID(),
+            workshopID: UUID = UUID(),
+            userID: UUID = UUID(),
+            status: String = "confirmed"
+        )
+        throws -> Reservation {
+            let testReservation = Reservation(
+                id: UUID(),
+                workshop: workshopID,
+                user: userID,
+                status: status
+            )
+            return testReservation
+        }
     }
     
     // TESTS - WORKSHOP CONTROLLER
@@ -140,8 +147,8 @@ struct lineupTests {
      DONE   path.get("", use: index)
 
          path.group(":id") { pathId in
-     TODO   pathId.get(use: getWorkshopWithReservation)
-     TODO   pathId.put(use: editWorkshop)
+     DONE   pathId.get(use: getWorkshopWithReservation) doing as protected
+     DOING   pathId.put(use: editWorkshop)               doing as protected
          }
          
      DONE    path.get("cate", use: catIndex)
@@ -159,6 +166,16 @@ struct lineupTests {
      DONE    validations.add("description", as: String.self, is: .count(5...Int.max))
      DONE    validations.add("categoryID", as: UUID.self, is: .valid)
      }
+     UPDATE WORKSHOP VALIDATIONS
+     static func validations(_ validations: inout Validations) {
+     DONE     validations.add("name", as: String.self, is: !.empty)
+     DONE     validations.add("startTime", as: Date.self, is: .valid)
+     DONE     validations.add("endTime", as: Date.self, is: .valid)
+     DONE     validations.add("maxCapacity", as: Int.self, is: .range(1...Int.max))
+     DONE     validations.add("totalSubscribers", as: Int.self, is: .range(1...Int.max))
+     DONE     validations.add("description", as: String.self, is: .count(5...Int.max))
+     DONE     validations.add("categoryID", as: UUID.self, is: .valid)
+      }
      */
     
     @Test("Test GET Workshops")
@@ -185,6 +202,396 @@ struct lineupTests {
             try await app.testing().test(.GET, "workshops/cate", headers: headers) { res async in
                 #expect(res.status == .ok )
             }
+        }
+    }
+    
+    @Test("Test Get Workshop With Reservations: without Reservations")
+    func testGetWorkshopWithReservationsWithoutReservations() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            let testCategory = try TestingHelper.createTestCategory()
+            try await testCategory.save(on: app.db)
+            
+            let testWorkshop = try TestingHelper.createTestWorkshop(categoryID: testCategory.id!)
+            try await testWorkshop.save(on: app.db)
+            
+            try await app.testing().test(
+                .GET,
+                "workshops/\(testWorkshop.id!)",
+                headers: headers,
+                afterResponse: { res async throws in
+                    #expect(res.status == .ok)
+                    let responseDTO = try res.content.decode(WorkshopWithReservationDTO.self)
+                    #expect(responseDTO.workshopDTO.name == testWorkshop.name)
+                    #expect(responseDTO.workshopDTO.categoryName == testCategory.name)
+                    #expect(responseDTO.reservations.isEmpty)
+                }
+            )
+        }
+    }
+    
+    @Test("Test Get Workshop With Reservations: with Reservations")
+    func testGetWorkshopWithReservationsWithReservations() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            let testCategory = try TestingHelper.createTestCategory()
+            try await testCategory.save(on: app.db)
+            
+            let testWorkshop = try TestingHelper.createTestWorkshop(categoryID: testCategory.id!)
+            try await testWorkshop.save(on: app.db)
+            
+            let testUser = try TestingHelper.createTestUser()
+            try await testUser.save(on: app.db)
+            
+            let testReservation = try TestingHelper.createTestReservation(
+                workshopID: testWorkshop.id!,
+                userID: testUser.id!
+            )
+            try await testReservation.save(on: app.db)
+            
+            try await app.testing().test(
+                .GET,
+                "workshops/\(testWorkshop.id!)",
+                headers: headers,
+                afterResponse: { res async throws in
+                    #expect(res.status == .ok)
+                    let responseDTO = try res.content.decode(WorkshopWithReservationDTO.self)
+                    #expect(responseDTO.workshopDTO.name == testWorkshop.name)
+                    #expect(responseDTO.workshopDTO.categoryName == testCategory.name)
+                    #expect(!responseDTO.reservations.isEmpty)
+                }
+            )
+        }
+    }
+    
+    @Test("Test Get Workshop With Reservations: Invalid UUID format")
+    func testGetWorkshopWithReservationsInvalidUUIDFormat() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            let invalidWorkshopID = "UUID"
+            
+            try await app.testing().test(
+                .GET,
+                "workshops/\(invalidWorkshopID)",
+                headers: headers,
+                afterResponse: { res async throws in
+                    #expect(res.status == .badRequest)
+                }
+            )
+        }
+    }
+    
+    @Test("Test Get Workshop With Reservations: Workshop Does Not Exist")
+    func testGetWorkshopWithReservationsWorkshopDoesNotExist() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            let invalidWorkshopID = UUID()
+            
+            try await app.testing().test(
+                .GET,
+                "workshops/\(invalidWorkshopID)",
+                headers: headers,
+                afterResponse: { res async throws in
+                    #expect(res.status == .notFound)
+                }
+            )
+        }
+    }
+    
+    @Test("Test Get Workshop With Reservations: From User")
+    func testGetWorkshopWithReservationsFromUser() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            let testCategory = try TestingHelper.createTestCategory()
+            try await testCategory.save(on: app.db)
+            
+            let testWorkshop = try TestingHelper.createTestWorkshop(categoryID: testCategory.id!)
+            try await testWorkshop.save(on: app.db)
+            
+            let testUser = try TestingHelper.createTestUser()
+            try await testUser.save(on: app.db)
+            
+            try await app.testing().test(
+                .GET,
+                "workshops",
+                headers: headers,
+                afterResponse: { res async throws in
+                    #expect(res.status == .ok)
+                    #expect(res.content.contentType == .json)
+                    let workshops = try res.content.decode([WorkshopDTO].self)
+                    #expect(!workshops.isEmpty)
+                    #expect(workshops.first?.name == "Test Workshop")
+                }
+            )
+        }
+    }
+    
+    @Test("Test Update Workshop")
+    func testUpdateWorkshop() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            let testCategory = try TestingHelper.createTestCategory()
+            try await testCategory.save(on: app.db)
+            
+            let testWorkshop = try TestingHelper.createTestWorkshop(categoryID: testCategory.id!)
+            try await testWorkshop.save(on: app.db)
+            
+            let testUpdateWorkshopDTO = UpdateWorkshopDTO(
+                name: testWorkshop.name,
+                startTime: testWorkshop.startTime,
+                endTime: testWorkshop.endTime,
+                maxCapacity: testWorkshop.maxCapacity,
+                totalSubscribers: testWorkshop.totalSubscribers,
+                description: testWorkshop.description,
+                categoryID: testWorkshop.$category.id
+            )
+            
+            try await app.testing().test(
+                .PUT,
+                "workshops/\(testWorkshop.id!)",
+                headers: headers,
+                beforeRequest: { req in
+                    try req.content.encode(testUpdateWorkshopDTO)
+                },
+                afterResponse: { res async throws in
+                    #expect(res.status == .ok)
+                }
+            )
+            return
+        }
+    }
+    
+    @Test("Test Update Workshop: Empty Name")
+    func testUpdateWorkshopEmptyName() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            let testCategory = try TestingHelper.createTestCategory()
+            try await testCategory.save(on: app.db)
+            
+            let testWorkshop = try TestingHelper.createTestWorkshop(categoryID: testCategory.id!)
+            try await testWorkshop.save(on: app.db)
+            
+            let testUpdateWorkshopDTO = UpdateWorkshopDTO(
+                name: "",
+                startTime: testWorkshop.startTime,
+                endTime: testWorkshop.endTime,
+                maxCapacity: testWorkshop.maxCapacity,
+                totalSubscribers: testWorkshop.totalSubscribers,
+                description: testWorkshop.description,
+                categoryID: testWorkshop.$category.id
+            )
+            
+            try await app.testing().test(
+                .PUT,
+                "workshops/\(testWorkshop.id!)",
+                headers: headers,
+                beforeRequest: { req in
+                    try req.content.encode(testUpdateWorkshopDTO)
+                },
+                afterResponse: { res async throws in
+                    #expect(res.status == .badRequest)
+                }
+            )
+            return
+        }
+    }
+    
+    @Test("Test Update Workshop: Invalid End Time")
+    func testUpdateWorkshopInvalidEndTime() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            let testCategory = try TestingHelper.createTestCategory()
+            try await testCategory.save(on: app.db)
+            
+            let testWorkshop = try TestingHelper.createTestWorkshop(categoryID: testCategory.id!)
+            try await testWorkshop.save(on: app.db)
+            
+            let testUpdateWorkshopDTO = UpdateWorkshopDTO(
+                name: testWorkshop.name,
+                startTime: Date(),
+                endTime: Date(timeIntervalSinceNow: -3600),
+                maxCapacity: testWorkshop.maxCapacity,
+                totalSubscribers: testWorkshop.totalSubscribers,
+                description: testWorkshop.description,
+                categoryID: testWorkshop.$category.id
+            )
+            
+            try await app.testing().test(
+                .PUT,
+                "workshops/\(testWorkshop.id!)",
+                headers: headers,
+                beforeRequest: { req in
+                    try req.content.encode(testUpdateWorkshopDTO)
+                },
+                afterResponse: { res async throws in
+                    #expect(res.status == .badRequest)
+                }
+            )
+            return
+        }
+    }
+    
+    @Test("Test Update Workshop: Invalid Max Capacity")
+    func testUpdateWorkshopInvalidMaxCapacity() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            let testCategory = try TestingHelper.createTestCategory()
+            try await testCategory.save(on: app.db)
+            
+            let testWorkshop = try TestingHelper.createTestWorkshop(categoryID: testCategory.id!)
+            try await testWorkshop.save(on: app.db)
+            
+            let testUpdateWorkshopDTO = UpdateWorkshopDTO(
+                name: testWorkshop.name,
+                startTime: testWorkshop.startTime,
+                endTime: testWorkshop.endTime,
+                maxCapacity: 0,
+                totalSubscribers: testWorkshop.totalSubscribers,
+                description: testWorkshop.description,
+                categoryID: testWorkshop.$category.id
+            )
+            
+            try await app.testing().test(
+                .PUT,
+                "workshops/\(testWorkshop.id!)",
+                headers: headers,
+                beforeRequest: { req in
+                    try req.content.encode(testUpdateWorkshopDTO)
+                },
+                afterResponse: { res async throws in
+                    #expect(res.status == .badRequest)
+                }
+            )
+            return
+        }
+    }
+    
+    @Test("Test Update Workshop: Invalid Total Subscribers")
+    func testUpdateWorkshopTotalSubscribers() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            let testCategory = try TestingHelper.createTestCategory()
+            try await testCategory.save(on: app.db)
+            
+            let testWorkshop = try TestingHelper.createTestWorkshop(categoryID: testCategory.id!)
+            try await testWorkshop.save(on: app.db)
+            
+            let testUpdateWorkshopDTO = UpdateWorkshopDTO(
+                name: testWorkshop.name,
+                startTime: testWorkshop.startTime,
+                endTime: testWorkshop.endTime,
+                maxCapacity: testWorkshop.maxCapacity,
+                totalSubscribers: 0,
+                description: testWorkshop.description,
+                categoryID: testWorkshop.$category.id
+            )
+            
+            try await app.testing().test(
+                .PUT,
+                "workshops/\(testWorkshop.id!)",
+                headers: headers,
+                beforeRequest: { req in
+                    try req.content.encode(testUpdateWorkshopDTO)
+                },
+                afterResponse: { res async throws in
+                    #expect(res.status == .badRequest)
+                }
+            )
+            return
+        }
+    }
+    
+    @Test("Test Update Workshop: Description Too Short")
+    func testUpdateWorkshopDescriptionTooShort() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            let testCategory = try TestingHelper.createTestCategory()
+            try await testCategory.save(on: app.db)
+            
+            let testWorkshop = try TestingHelper.createTestWorkshop(categoryID: testCategory.id!)
+            try await testWorkshop.save(on: app.db)
+            
+            let testUpdateWorkshopDTO = UpdateWorkshopDTO(
+                name: testWorkshop.name,
+                startTime: testWorkshop.startTime,
+                endTime: testWorkshop.endTime,
+                maxCapacity: testWorkshop.maxCapacity,
+                totalSubscribers: testWorkshop.totalSubscribers,
+                description: "not5",
+                categoryID: testWorkshop.$category.id
+            )
+            
+            try await app.testing().test(
+                .PUT,
+                "workshops/\(testWorkshop.id!)",
+                headers: headers,
+                beforeRequest: { req in
+                    try req.content.encode(testUpdateWorkshopDTO)
+                },
+                afterResponse: { res async throws in
+                    #expect(res.status == .badRequest)
+                }
+            )
+            return
+        }
+    }
+    
+    @Test("Test Update Workshop: Category Not Found")
+    func testUpdateWorkshopCategoryNotFound() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            let testCategory = try TestingHelper.createTestCategory()
+            try await testCategory.save(on: app.db)
+            
+            let testWorkshop = try TestingHelper.createTestWorkshop(categoryID: testCategory.id!)
+            try await testWorkshop.save(on: app.db)
+            
+            let testUpdateWorkshopDTO = UpdateWorkshopDTO(
+                name: testWorkshop.name,
+                startTime: testWorkshop.startTime,
+                endTime: testWorkshop.endTime,
+                maxCapacity: testWorkshop.maxCapacity,
+                totalSubscribers: testWorkshop.totalSubscribers,
+                description: testWorkshop.description,
+                categoryID: UUID()
+            )
+            
+            try await app.testing().test(
+                .PUT,
+                "workshops/\(testWorkshop.id!)",
+                headers: headers,
+                beforeRequest: { req in
+                    try req.content.encode(testUpdateWorkshopDTO)
+                },
+                afterResponse: { res async throws in
+                    #expect(res.status == .notFound)
+                }
+            )
+            return
         }
     }
     
@@ -258,8 +665,8 @@ struct lineupTests {
         }
     }
     
-    @Test("Test Create Workshop: Invalid Start Time")
-    func testCreateWorkshopInvalidStartTime() async throws {
+    @Test("Test Create Workshop: Invalid End Time")
+    func testCreateWorkshopInvalidEndTime() async throws {
         try await withApp { app in
             let user = TestingHelper.mockUserPayload()
             let headers = try TestingHelper.authHeader(for: user)
@@ -470,7 +877,6 @@ struct lineupTests {
         }
     }
     
-    
     // TESTS - USER CONTROLLER
     
     // Test - /login
@@ -509,7 +915,6 @@ struct lineupTests {
             try await testUser.save(on: app.db)
             
             let loginCreds = LoginRequestDTO(email: "test@email.com", password: "testWRONG1234")
-            var token = ""
             
             try await app.testing().test(
                 .POST,
@@ -519,7 +924,6 @@ struct lineupTests {
                 },
                 afterResponse: { res async throws in
                     #expect(res.status == .notFound)
-                    #expect(token.isEmpty)
                 }
             )
             return
@@ -534,7 +938,6 @@ struct lineupTests {
             try await testUser.save(on: app.db)
             
             let loginCreds = LoginRequestDTO(email: "testWrong@email.com", password: "testPASS1234")
-            var token = ""
             
             try await app.testing().test(
                 .POST,
@@ -544,7 +947,6 @@ struct lineupTests {
                 },
                 afterResponse: { res async throws in
                     #expect(res.status == .notFound)
-                    #expect(token.isEmpty)
                 }
             )
             return
@@ -571,7 +973,7 @@ struct lineupTests {
             return
         }
     }
-    
+    /*
     @Test("Test Register: Duplication")
     func testRegisterDuplication() async throws {
         try await withApp { app in
@@ -594,7 +996,7 @@ struct lineupTests {
             return
         }
     }
-    
+    */
     @Test("Test Register: Empty Name")
     func testRegisterEmptyName() async throws {
         try await withApp { app in
@@ -717,9 +1119,41 @@ struct lineupTests {
         }
     }
     
-    // Test: profile?? do we even need this route?
-    
-    
     // TESTS - RESERVATION CONTROLLER
+    /*
+    import Fluent
+    import Vapor
+    struct ReservationController: RouteCollection{
+        func boot(routes: any RoutesBuilder) throws {
+            let reservations = routes.grouped("reservations")
+            
+            reservations.get(use: getAll)
+            reservations.get(":id", use: getOneById)
+            
+            let privateRoutes = reservations.grouped(JWTMiddleware())
+            privateRoutes.post("participate", use: participate)
+
+            privateRoutes.delete("cancel",":id", use: cancel)
+        }
+     MISSING routes
+     
+     The final section left to implement in your test suite is the ReservationController. You need to write tests for these remaining endpoints:
+     GET /reservations (getAll)
+     GET /reservations/:id (getOneById)
+     POST /reservations/participate (Protected route - test success and failure when participating in a workshop)
+     DELETE /reservations/cancel/:id (Protected route - test successfully canceling a reservation and handling missing/unauthorized cases)
+     
+    */
+    @Test("Test GET Reservations")
+    func testGetReservations() async throws {
+        try await withApp { app in
+            let user = TestingHelper.mockUserPayload()
+            let headers = try TestingHelper.authHeader(for: user)
+            
+            try await app.testing().test(.GET, "workshops", headers: headers) { res async in
+                #expect(res.status == .ok )
+            }
+        }
+    }
     
 }

@@ -16,6 +16,10 @@ struct UserDTO: Content {
     let role: String
     let createdAt: Date
 }
+
+struct AuthDTO: Content {
+    let token: String
+}
 /*
 extension UserDTO {
     func toModel() -> User {

@@ -13,12 +13,13 @@ struct UserController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         
         routes.post("login", use: login)
+        routes.post("login","admin", use: loginAdmin)
         routes.post("register", use: create)
 
-        let users = routes.grouped("users")
-        
-        let privateRoutes = users.grouped(JWTMiddleware())
-        privateRoutes.get("profile", use: profile)
+//        let users = routes.grouped("users")
+//        
+//        let privateRoutes = users.grouped(JWTMiddleware())
+//        privateRoutes.get("profile", use: profile)
         
     }
     
@@ -58,20 +59,38 @@ struct UserController: RouteCollection {
     }
     
     @Sendable
-    func profile(req :Request) async throws -> UserDTO {
-        let payload = try req.auth.require(UserPayload.self)
-        
-        guard let userDB = try await User.find(payload.id, on: req.db) else {
-            throw Abort(.notFound, reason: "User not found")
+    func loginAdmin(req: Request) async throws -> AuthDTO {
+        let userRequest = try req.content.decode(LoginRequestDTO.self)
+
+        guard let userDB = try await User
+            .query(on: req.db)
+            .filter(\.$role == "admin")
+            .filter(\.$email == userRequest.email)
+            .first()
+        else {
+            throw Abort(.notFound, reason: "Authentification failed")
         }
         
-        return userDB.toDTO()
+        guard try Bcrypt.verify(userRequest.password, created: userDB.password) else {
+            throw Abort(.notFound, reason: "Authentification failed")
+        }
+        
+        let payload = UserPayload(id: userDB.id!)
+        let signer = JWTSigner.hs256(key: "MACLESUPERSECRETE")
+        let jwToken = try signer.sign(payload)
+        
+        return AuthDTO(token: jwToken)
     }
-}
-
-
-
-struct AuthDTO: Content {
-    let token: String
+    
+//    @Sendable
+//    func profile(req :Request) async throws -> UserDTO {
+//        let payload = try req.auth.require(UserPayload.self)
+//        
+//        guard let userDB = try await User.find(payload.id, on: req.db) else {
+//            throw Abort(.notFound, reason: "User not found")
+//        }
+//        
+//        return userDB.toDTO()
+//    }
 }
 

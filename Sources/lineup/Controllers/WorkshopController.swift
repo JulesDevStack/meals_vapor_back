@@ -10,19 +10,18 @@ import Vapor
 
 struct WorkshopController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
-        let path = routes.grouped("workshops")
+        var path = routes.grouped("workshops")
+        path = path.grouped(JWTMiddleware())
         path.get("", use: index)
 
         path.group(":id") { pathId in
             pathId.get(use: getWorkshopWithReservation)
             pathId.put(use: editWorkshop)
         }
-        
         path.get("cate", use: catIndex)
         
-        let privateRoutes = path.grouped(JWTMiddleware())
-        privateRoutes.get("reservations", use: getReservedWorkshopFromUser)
-        privateRoutes.post("", use: createWorkshop)
+        path.get("reservations", use: getReservedWorkshopFromUser)
+        path.post("", use: createWorkshop)
     }
     
     @Sendable
