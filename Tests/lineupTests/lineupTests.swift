@@ -501,7 +501,7 @@ struct lineupTests {
                 startTime: testWorkshop.startTime,
                 endTime: testWorkshop.endTime,
                 maxCapacity: testWorkshop.maxCapacity,
-                totalSubscribers: 0,
+                totalSubscribers: -1,
                 description: testWorkshop.description,
                 categoryID: testWorkshop.$category.id
             )
