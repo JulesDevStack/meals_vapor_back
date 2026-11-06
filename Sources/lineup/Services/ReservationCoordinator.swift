@@ -68,18 +68,32 @@ actor ReservationCoordinator {
             try await workshop.update(on: transaction)
         }
     }
-
     func cancel(id: UUID, userID: UUID, on db: any Database) async throws {
         await enter()
         defer { leave() }
 
         try await db.transaction { transaction in
-            guard let reservation = try await Reservation.find(id, on: transaction) else {
+            guard let reservation = try await Reservation
+                .query(on: transaction)
+                .filter(\.$id == id)
+                .with(\.$user)
+                .first()
+            else {
                 throw Abort(.notFound)
             }
-            guard reservation.$user.id == userID else {
+            
+            guard let user = try await User
+                .query(on: transaction)
+                .filter(\.$id == userID)
+                .first()
+            else {
+                throw Abort(.notFound)
+            }
+            
+            guard reservation.$user.id == userID || user.role == "admin" else {
                 throw Abort(.forbidden)
             }
+            
             guard reservation.status != ReservationStatus.cancel.rawValue else {
                 return
             }
@@ -97,7 +111,6 @@ actor ReservationCoordinator {
             try await workshop.update(on: transaction)
         }
     }
-
     func editWorkshop(id: UUID, update: UpdateWorkshopDTO, on db: any Database) async throws -> WorkshopDTO {
         await enter()
         defer { leave() }
@@ -131,7 +144,6 @@ actor ReservationCoordinator {
             return try saved.toWorkshopDTO()
         }
     }
-
     func deleteWorkshop(id: UUID, on db: any Database) async throws {
         await enter()
         defer { leave() }
