@@ -77,30 +77,14 @@ struct ReservationController: RouteCollection{
     
     //create reservation
     func participate(req: Request) async throws -> Response {
-        var reservation = try req.content.decode(CreateReservationDTO.self)
-            
+        let reservation = try req.content.decode(CreateReservationDTO.self)
         let payload = try req.auth.require(UserPayload.self)
-        
-        guard let userDB = try await User.find(payload.id, on: req.db) else {
-            throw Abort(.notFound, reason: "User not found")
-        }
-        
-        reservation.userID = userDB.id
-        
-        let existingReservation = try await Reservation.query(on: req.db)
-            .filter(\.$user.$id == reservation.userID!)
-            .filter(\.$workshop.$id == reservation.workshopID)
-            .first()
-        
-        if existingReservation != nil {
-            return Response(status: .custom(code: 409, reasonPhrase: "Reservation already exist."))
-        } else {
-            let reservationModel = try reservation.toModel()
-            try await reservationModel.save(on: req.db)
-            return Response(status: .created)
-        }
-        
-        
+        try await req.application.reservationCoordinator.participate(
+            userID: payload.id,
+            workshopID: reservation.workshopID,
+            on: req.db
+        )
+        return Response(status: .created)
     }
     
     //cancel reservation
@@ -109,20 +93,8 @@ struct ReservationController: RouteCollection{
             throw Abort(.badRequest)
         }
 
-        guard let reservation = try await Reservation.find(id, on: req.db) else {
-            throw Abort(.notFound)
-        }
-        
         let payload = try req.auth.require(UserPayload.self)
-        
-        guard reservation.$user.id == payload.id else {
-            throw Abort(.forbidden, reason: "Not authorized")
-        }
-        
-                
-        reservation.status = ReservationStatus.cancel.rawValue
-
-        try await reservation.update(on: req.db)
+        try await req.application.reservationCoordinator.cancel(id: id, userID: payload.id, on: req.db)
 
         return .noContent
     }

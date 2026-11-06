@@ -59,7 +59,6 @@ extension Workshop {
         self.startTime = updatedWorkshop.startTime
         self.endTime = updatedWorkshop.endTime
         self.maxCapacity = updatedWorkshop.maxCapacity
-        self.totalSubscribers = updatedWorkshop.totalSubscribers
         self.description = updatedWorkshop.description
         self.$category.id = updatedWorkshop.categoryID
     }
