@@ -10,6 +10,12 @@ import JWT
 
 final class JWTMiddleware: Middleware {
     func respond(to request: Request, chainingTo next: any Responder) -> EventLoopFuture<Response> {
+        
+     /*   // Bypass authentication during unit testing if needed - removes need for token from tests
+        if request.application.environment == .testing {
+            return next.respond(to: request)
+        }
+      */
         //get token from https headers Authorization
         guard let token = request.headers.bearerAuthorization?.token else {
             return request.eventLoop.future(error: Abort(.unauthorized, reason: "missing token"))

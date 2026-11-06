@@ -23,6 +23,6 @@ struct CreateUserDTO: Content, Validatable {
 
 extension CreateUserDTO {
     func toModel() -> User {
-        return User(id: nil, name: name, password: password, email: email, role: "USER", createdAt: Date())
+        return User(id: nil, name: name, password: password, email: email, role: "user", createdAt: Date())
     }
 }
